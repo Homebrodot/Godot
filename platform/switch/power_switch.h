@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  ip_unix.h                                                             */
+/*  power_switch.h                                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,27 +28,22 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef IP_UNIX_H
-#define IP_UNIX_H
+#pragma once
+#include "core/os/os.h"
 
-#include "core/io/ip.h"
+class PowerSwitch {
+private:
+	int nsecs_left;
+	int percent_left;
+	OS::PowerState power_state;
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HORIZON_ENABLED)
-
-class IP_Unix : public IP {
-	GDCLASS(IP_Unix, IP);
-
-	virtual void _resolve_hostname(List<IP_Address> &r_addresses, const String &p_hostname, Type p_type = TYPE_ANY) const;
-
-	static IP *_create_unix();
+	bool GetPowerInfo_Switch();
 
 public:
-	virtual void get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const;
+	PowerSwitch();
+	virtual ~PowerSwitch();
 
-	static void make_default();
-	IP_Unix();
+	OS::PowerState get_power_state();
+	int get_power_seconds_left();
+	int get_power_percent_left();
 };
-
-#endif
-
-#endif // IP_UNIX_H

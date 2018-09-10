@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  ip_unix.h                                                             */
+/*  power_switch.cpp                                                      */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,27 +28,25 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef IP_UNIX_H
-#define IP_UNIX_H
+#include "power_switch.h"
+#include "switch_wrapper.h"
 
-#include "core/io/ip.h"
+PowerSwitch::PowerSwitch() {
+	nsecs_left = 0;
+	percent_left = 0;
+	power_state = OS::PowerState::POWERSTATE_ON_BATTERY;
+}
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HORIZON_ENABLED)
+PowerSwitch::~PowerSwitch() {}
 
-class IP_Unix : public IP {
-	GDCLASS(IP_Unix, IP);
+OS::PowerState PowerSwitch::get_power_state() {
+	return power_state;
+}
 
-	virtual void _resolve_hostname(List<IP_Address> &r_addresses, const String &p_hostname, Type p_type = TYPE_ANY) const;
+int PowerSwitch::get_power_seconds_left() {
+	return nsecs_left / 1000000;
+}
 
-	static IP *_create_unix();
-
-public:
-	virtual void get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const;
-
-	static void make_default();
-	IP_Unix();
-};
-
-#endif
-
-#endif // IP_UNIX_H
+int PowerSwitch::get_power_percent_left() {
+	return percent_left;
+}

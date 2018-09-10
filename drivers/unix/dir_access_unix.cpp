@@ -413,6 +413,9 @@ String DirAccessUnix::read_link(String p_file) {
 
 	p_file = fix_path(p_file);
 
+#ifdef HORIZON_ENABLED
+	return p_file;
+#else
 	char buf[256];
 	memset(buf, 0, 256);
 	ssize_t len = readlink(p_file.utf8().get_data(), buf, sizeof(buf));
@@ -421,9 +424,13 @@ String DirAccessUnix::read_link(String p_file) {
 		link.parse_utf8(buf, len);
 	}
 	return link;
+#endif
 }
 
 Error DirAccessUnix::create_link(String p_source, String p_target) {
+#ifdef HORIZON_ENABLED
+	return FAILED;
+#else
 	if (p_target.is_rel_path())
 		p_target = get_current_dir().plus_file(p_target);
 
@@ -435,6 +442,7 @@ Error DirAccessUnix::create_link(String p_source, String p_target) {
 	} else {
 		return FAILED;
 	}
+#endif
 }
 
 uint64_t DirAccessUnix::get_space_left() {
