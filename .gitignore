@@ -363,3 +363,13 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
+
+# Templates
+templates/
+/*.zip
+/*.tpz
+
+# Switch
+*.nro
+switch/
+config/nx-hbmenu/

@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  ip_unix.h                                                             */
+/*  joypad_switch.cpp                                                     */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,27 +28,69 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef IP_UNIX_H
-#define IP_UNIX_H
+#include "joypad_switch.h"
 
-#include "core/io/ip.h"
-
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HORIZON_ENABLED)
-
-class IP_Unix : public IP {
-	GDCLASS(IP_Unix, IP);
-
-	virtual void _resolve_hostname(List<IP_Address> &r_addresses, const String &p_hostname, Type p_type = TYPE_ANY) const;
-
-	static IP *_create_unix();
-
-public:
-	virtual void get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const;
-
-	static void make_default();
-	IP_Unix();
+static u64 pad_ids[JOYPADS_MAX] = {
+	(1ull << HidNpadIdType_No1) | (1ull << HidNpadIdType_Handheld),
+	(1ull << HidNpadIdType_No2),
+	(1ull << HidNpadIdType_No3),
+	(1ull << HidNpadIdType_No4),
+	(1ull << HidNpadIdType_No5),
+	(1ull << HidNpadIdType_No6),
+	(1ull << HidNpadIdType_No7),
+	(1ull << HidNpadIdType_No8)
 };
 
-#endif
+// from editor "Project Settings > Input Map"
+static const HidNpadButton pad_mapping[] = {
+	HidNpadButton_B, HidNpadButton_A, HidNpadButton_Y, HidNpadButton_X,
+	HidNpadButton_L, HidNpadButton_R, HidNpadButton_ZL, HidNpadButton_ZR,
+	HidNpadButton_StickL, HidNpadButton_StickR,
+	HidNpadButton_Minus, HidNpadButton_Plus,
+	HidNpadButton_Up, HidNpadButton_Down, HidNpadButton_Left, HidNpadButton_Right
+};
 
-#endif // IP_UNIX_H
+JoypadSwitch::JoypadSwitch(InputDefault *in) {
+	input = in;
+
+	// TODO: n players?
+	padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+
+	button_count = sizeof(pad_mapping) / sizeof(*pad_mapping);
+	for (int i = 0; i < JOYPADS_MAX; i++) {
+		padInitializeWithMask(&pads[i], pad_ids[i]);
+	}
+}
+
+JoypadSwitch::~JoypadSwitch() {
+}
+
+void JoypadSwitch::process() {
+	for (int index = 0; index < JOYPADS_MAX; index++) {
+		padUpdate(&pads[index]);
+
+		HidAnalogStickState l_stick = padGetStickPos(&pads[index], 0);
+		HidAnalogStickState r_stick = padGetStickPos(&pads[index], 1);
+
+		// Axes
+		input->joy_axis(index, 0, (float)(l_stick.x / 32767.0f));
+		input->joy_axis(index, 1, (float)(-l_stick.y / 32767.0f));
+		input->joy_axis(index, 2, (float)(r_stick.x / 32767.0f));
+		input->joy_axis(index, 3, (float)(-r_stick.y / 32767.0f));
+
+		// Buttons
+		u64 buttons_up = padGetButtonsUp(&pads[index]);
+		u64 buttons_down = padGetButtonsDown(&pads[index]);
+
+		if (buttons_up != 0 || buttons_down != 0) {
+			for (int i = 0; i < button_count; i++) {
+				if (buttons_up & pad_mapping[i]) {
+					input->joy_button(index, i, false);
+				}
+				if (buttons_down & pad_mapping[i]) {
+					input->joy_button(index, i, true);
+				}
+			}
+		}
+	}
+}

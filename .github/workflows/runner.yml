@@ -44,3 +44,8 @@ jobs:
     name: 🏁 Windows
     needs: static-checks
     uses: ./.github/workflows/windows_builds.yml
+
+  switch-build:
+    name: 🔄 Switch
+    needs: static-checks
+    uses: ./.github/workflows/switch_builds.yml

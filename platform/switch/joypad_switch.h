@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  ip_unix.h                                                             */
+/*  joypad_switch.h                                                       */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,27 +28,25 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef IP_UNIX_H
-#define IP_UNIX_H
+//author: Andreas Haas <hondres,  liugam3@gmail.com>
+#ifndef JOYPAD_SWITCH_H
+#define JOYPAD_SWITCH_H
 
-#include "core/io/ip.h"
+#include "main/input_default.h"
+#include "switch_wrapper.h"
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HORIZON_ENABLED)
+#define JOYPADS_MAX 8
 
-class IP_Unix : public IP {
-	GDCLASS(IP_Unix, IP);
-
-	virtual void _resolve_hostname(List<IP_Address> &r_addresses, const String &p_hostname, Type p_type = TYPE_ANY) const;
-
-	static IP *_create_unix();
-
+class JoypadSwitch {
 public:
-	virtual void get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const;
+	JoypadSwitch(InputDefault *in);
+	~JoypadSwitch();
+	void process();
 
-	static void make_default();
-	IP_Unix();
+private:
+	InputDefault *input;
+	PadState pads[JOYPADS_MAX];
+	int button_count = 0;
 };
 
-#endif
-
-#endif // IP_UNIX_H
+#endif // JOYPAD_SWITCH_H

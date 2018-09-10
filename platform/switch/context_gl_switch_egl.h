@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  ip_unix.h                                                             */
+/*  context_gl_switch_egl.h                                               */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,27 +28,33 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef IP_UNIX_H
-#define IP_UNIX_H
+#pragma once
+#include "core/os/os.h"
+#include <EGL/egl.h> // EGL library
 
-#include "core/io/ip.h"
+class ContextGLSwitchEGL {
+	bool gles3_context;
+	bool vsync;
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HORIZON_ENABLED)
-
-class IP_Unix : public IP {
-	GDCLASS(IP_Unix, IP);
-
-	virtual void _resolve_hostname(List<IP_Address> &r_addresses, const String &p_hostname, Type p_type = TYPE_ANY) const;
-
-	static IP *_create_unix();
+	EGLDisplay display;
+	EGLContext context;
+	EGLSurface surface;
 
 public:
-	virtual void get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const;
+	virtual void release_current();
+	virtual void make_current();
 
-	static void make_default();
-	IP_Unix();
+	virtual int get_window_width();
+	virtual int get_window_height();
+	virtual void swap_buffers();
+
+	void set_use_vsync(bool use) { vsync = use; }
+	bool is_using_vsync() const { return vsync; }
+
+	virtual Error initialize();
+	void reset();
+	void cleanup();
+
+	ContextGLSwitchEGL(bool gles3);
+	virtual ~ContextGLSwitchEGL();
 };
-
-#endif
-
-#endif // IP_UNIX_H

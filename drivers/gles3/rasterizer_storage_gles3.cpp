@@ -8086,11 +8086,10 @@ void RasterizerStorageGLES3::initialize() {
 	// If the desktop build is using S3TC, and you export / run from the IDE for android, if the device supports
 	// S3TC it will crash trying to load these textures, as they are not exported in the APK. This is a simple way
 	// to prevent Android devices trying to load S3TC, by faking lack of hardware support.
-#if defined(ANDROID_ENABLED) || defined(IPHONE_ENABLED)
+#if defined(ANDROID_ENABLED) || defined(IPHONE_ENABLED) || defined(HORIZON_ENABLED)
 	config.s3tc_supported = false;
 #endif
 #endif
-
 	// not yet detected on GLES3 (is this mandated?)
 	config.support_npot_repeat_mipmap = true;
 
