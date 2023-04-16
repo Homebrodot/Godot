@@ -1,12 +1,11 @@
 /*************************************************************************/
-/*  audio_driver_dummy.cpp                                               */
+/*  audio_driver_psp.cpp                                                 */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
-/*                      https://godotengine.org                          */
+/*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2020 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2020 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -28,16 +27,21 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "audio_driver_dummy.h"
-
+#include "audio_driver_psp.h"
+#include "core/os/thread.h"
 #include "globals.h"
 #include "os/os.h"
+#include <string.h>
 
-Error AudioDriverDummy::init() {
+#define PPSSPP
 
-	active = false;
-	thread_exited = false;
-	exit_thread = false;
+static int channel_num = 1;
+
+int32_t* buffer;
+
+Error AudioDriverPSP::init() {
+	thread_exited=false;
+	exit_thread=false;
 	pcm_open = false;
 	samples_in = NULL;
 
@@ -45,93 +49,123 @@ Error AudioDriverDummy::init() {
 	output_format = OUTPUT_STEREO;
 	channels = 2;
 
-	int latency = GLOBAL_DEF("audio/output_latency", 25);
-	buffer_size = closest_power_of_2(latency * mix_rate / 1000);
+	int latency = GLOBAL_DEF("audio/output_latency",25);
+ 	buffer_size = next_power_of_2( latency * mix_rate / 1000 );
 
-	samples_in = memnew_arr(int32_t, buffer_size * channels);
+	samples_in = memnew_arr(int32_t, buffer_size*channels);
+	samples_out = memnew_arr(int16_t, buffer_size*channels);
+
+	// channel_num = sceAudioChReserve(1, PSP_AUDIO_SAMPLE_ALIGN(buffer_size*channels), PSP_AUDIO_FORMAT_MONO);
+	sceAudioOutput2Reserve(buffer_size);
 
 	mutex = Mutex::create();
-	thread = Thread::create(AudioDriverDummy::thread_func, this);
+	thread = Thread::create(AudioDriverPSP::thread_func, this);
+
 
 	return OK;
 };
 
-void AudioDriverDummy::thread_func(void *p_udata) {
+void AudioDriverPSP::thread_func(void *p_udata) {
 
-	AudioDriverDummy *ad = (AudioDriverDummy *)p_udata;
+	int buffer_index = 0;
+	printf("out\n");
+ 	AudioDriverPSP* ad = (AudioDriverPSP*)p_udata;
 
+	int sample_count = ad->buffer_size ;
 	uint64_t usdelay = (ad->buffer_size / float(ad->mix_rate)) * 1000000;
 
-	while (!ad->exit_thread) {
+ 	while (!ad->exit_thread) {
 
-		if (!ad->active) {
 
-		} else {
-
+ 		if (ad->exit_thread)
+ 			break;
+#ifndef PPSSPP
+		while(sceAudioWaitInputEnd()) {
+			OS::get_singleton()->delay_usec(usdelay);
+		}
+#endif
+		if (ad->active) {
 			ad->lock();
 
 			ad->audio_server_process(ad->buffer_size, ad->samples_in);
-			printf("progress\n");
+
 			ad->unlock();
-		};
 
-		OS::get_singleton()->delay_usec(usdelay);
-	};
+			for(int i = 0; i < sample_count*2; ++i) {
+				ad->samples_out[i] = ad->samples_in[i] >> 16;
+			}
 
-	ad->thread_exited = true;
+
+		} else
+		{
+			for (int i = 0; i < sample_count*2; i++) {
+
+				ad->samples_out[i] = 0;
+			}
+		}
+// #ifdef PPSSPP
+// 		OS::get_singleton()->delay_usec(usdelay);
+// #endif
+		sceAudioOutput2OutputBlocking(0x8000, ad->samples_out);
+	}
+
+
+	ad->thread_exited=true;
 };
 
-void AudioDriverDummy::start() {
-
+void AudioDriverPSP::start() {
+	printf("psp audio start\n");
 	active = true;
 };
 
-int AudioDriverDummy::get_mix_rate() const {
+int AudioDriverPSP::get_mix_rate() const {
 
 	return mix_rate;
 };
 
-AudioDriverSW::OutputFormat AudioDriverDummy::get_output_format() const {
+AudioDriverSW::OutputFormat AudioDriverPSP::get_output_format() const {
 
 	return output_format;
 };
-void AudioDriverDummy::lock() {
+void AudioDriverPSP::lock() {
 
 	if (!thread || !mutex)
-		return;
-	mutex->lock();
+ 		return;
+ 	mutex->lock();
 };
-void AudioDriverDummy::unlock() {
+void AudioDriverPSP::unlock() {
 
 	if (!thread || !mutex)
 		return;
 	mutex->unlock();
 };
 
-void AudioDriverDummy::finish() {
-
-	if (!thread)
-		return;
-
+void AudioDriverPSP::finish() {
 	exit_thread = true;
-	Thread::wait_to_finish(thread);
+ 	Thread::wait_to_finish(thread);
+
+	sceAudioOutput2Release();
 
 	if (samples_in) {
-		memdelete_arr(samples_in);
-	};
+ 		memdelete_arr(samples_in);
+ 	};
+	if (samples_out) {
+ 		memdelete_arr(samples_out);
+ 	};
 
-	memdelete(thread);
-	if (mutex)
-		memdelete(mutex);
-	thread = NULL;
+
+ 	if (mutex)
+ 		memdelete(mutex);
+
 };
 
-AudioDriverDummy::AudioDriverDummy() {
+AudioDriverPSP::AudioDriverPSP() {
 
-	mutex = NULL;
-	thread = NULL;
+ 	mutex = NULL;
+	active = false;
+	id = NULL;
 };
 
-AudioDriverDummy::~AudioDriverDummy(){
+AudioDriverPSP::~AudioDriverPSP() {
 
 };

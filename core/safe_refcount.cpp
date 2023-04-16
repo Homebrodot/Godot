@@ -32,7 +32,7 @@
 
 // Atomic functions, these are used for multithread safe reference counters!
 
-#ifdef NO_THREADS
+#if defined(NO_THREADS) || defined(PSP_ENABLED)
 
 /* Bogus implementation unaware of multiprocessing */
 

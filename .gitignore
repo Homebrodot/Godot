@@ -9,6 +9,9 @@ doc/classes/
 # Javascript specific
 *.bc
 
+# PSP specific
+EBOOT.PBP
+
 # Android specific
 platform/android/java/build.gradle
 platform/android/java/.gradle

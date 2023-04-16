@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  file_access_unix.h                                                   */
+/*  export.cpp                                                           */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,63 +28,24 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef FILE_ACCESS_UNIX_H
-#define FILE_ACCESS_UNIX_H
+#include "export.h"
+#include "editor/editor_import_export.h"
+#include "platform/psp/logo.gen.h"
+#include "scene/resources/texture.h"
 
-#include "os/file_access.h"
-#include "os/memory.h"
-#include <stdio.h>
+void register_psp_exporter() {
 
-#if defined(UNIX_ENABLED) || defined(LIBC_FILEIO_ENABLED) || defined(PSP_ENABLED)
+	Image img(_psp_logo);
+	Ref<ImageTexture> logo = memnew(ImageTexture);
+	logo->create_from_image(img);
 
-/**
-	@author Juan Linietsky <reduzio@gmail.com>
-*/
-
-typedef void (*CloseNotificationFunc)(const String &p_file, int p_flags);
-
-class FileAccessUnix : public FileAccess {
-
-	FILE *f;
-	int flags;
-	void check_errors() const;
-	mutable Error last_error;
-	String save_path;
-	String path;
-
-	static FileAccess *create_libc();
-
-public:
-	static CloseNotificationFunc close_notification_func;
-
-	virtual Error _open(const String &p_path, int p_mode_flags); ///< open a file
-	virtual void close(); ///< close a file
-	virtual bool is_open() const; ///< true when file is open
-
-	virtual void seek(size_t p_position); ///< seek to a given position
-	virtual void seek_end(int64_t p_position = 0); ///< seek from the end of file
-	virtual size_t get_pos() const; ///< get position in the file
-	virtual size_t get_len() const; ///< get size of the file
-
-	virtual bool eof_reached() const; ///< reading passed EOF
-
-	virtual uint8_t get_8() const; ///< get a byte
-	virtual int get_buffer(uint8_t *p_dst, int p_length) const;
-
-	virtual Error get_error() const; ///< get last error
-
-	virtual void store_8(uint8_t p_dest); ///< store a byte
-	virtual void store_buffer(const uint8_t *p_src, int p_length); ///< store an array of bytes
-
-	virtual bool file_exists(const String &p_path); ///< return true if a file exists
-
-	virtual uint64_t _get_modified_time(const String &p_file);
-
-	virtual Error _chmod(const String &p_path, int p_mod);
-
-	FileAccessUnix();
-	virtual ~FileAccessUnix();
-};
-
-#endif
-#endif
+	{
+		Ref<EditorExportPlatformPC> exporter = Ref<EditorExportPlatformPC>(memnew(EditorExportPlatformPC));
+		exporter->set_binary_extension("PBP");
+		exporter->set_release_binary32("EBOOT.PBP");
+		exporter->set_name("PSP");
+		exporter->set_logo(logo);
+		exporter->set_chmod_flags(0755);
+		EditorImportExport::get_singleton()->add_export_platform(exporter);
+	}
+}

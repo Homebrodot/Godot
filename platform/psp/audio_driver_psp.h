@@ -1,12 +1,11 @@
 /*************************************************************************/
-/*  semaphore_posix.h                                                    */
+/*  audio_driver_3ds.h                                                   */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
-/*                      https://godotengine.org                          */
+/*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2020 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2020 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -27,34 +26,59 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
+#ifndef AUDIO_DRIVER_PSP_H
+#define AUDIO_DRIVER_PSP_H
 
-#ifndef SEMAPHORE_POSIX_H
-#define SEMAPHORE_POSIX_H
+#include "servers/audio/audio_server_sw.h"
 
-#include "os/semaphore.h"
+#include "core/os/thread.h"
+#include "core/os/mutex.h"
 
-#if defined(UNIX_ENABLED) || defined(PTHREAD_ENABLED) && !defined(PSP_ENABLED)
+#include <pspaudio.h>
+#include <pspaudiolib.h>
+#include <pspthreadman.h>
+#include <pspkerneltypes.h>
 
-#include <semaphore.h>
-/**
-	@author Juan Linietsky <reduzio@gmail.com>
-*/
-class SemaphorePosix : public Semaphore {
+class AudioDriverPSP : public AudioDriverSW {
 
-	mutable sem_t sem;
+	Thread *thread;
+	Mutex *mutex;
+	int32_t* samples_in;
+	int16_t* samples_out;
+	int id;
 
-	static Semaphore *create_semaphore_posix();
+	static void thread_func(void *p_udata);
+
+
+	int buffer_size;
+
+	unsigned int mix_rate;
+	OutputFormat output_format;
+
+	int channels;
+
+	bool active;
+	bool thread_exited;
+	bool exit_thread;
+	bool pcm_open;
 
 public:
-	virtual Error wait();
-	virtual Error post();
-	virtual int get() const;
 
-	static void make_default();
-	SemaphorePosix();
+	const char* get_name() const {
+		return "PSP Audio";
+	};
 
-	~SemaphorePosix();
+	virtual Error init();
+	virtual void start();
+	virtual int get_mix_rate() const;
+	virtual OutputFormat get_output_format() const;
+
+	virtual void lock();
+	virtual void unlock();
+	virtual void finish();
+
+	AudioDriverPSP();
+	~AudioDriverPSP();
 };
 
-#endif
 #endif

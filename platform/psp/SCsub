@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+
+Import('env')
+
+
+common_server = [
+    "os_psp.cpp",
+	"audio_driver_psp.cpp",
+	"rasterizer_psp.cpp",
+	#"joypad_psp.cpp"
+]
+
+prog = env.add_program('#bin/godot_psp', ['godot_psp.cpp'] + common_server)
+
+env.Command(
+	"#bin/godot.elf", prog ,"psp-fixup-imports -o bin/godot.elf bin/godot_psp.psp.opt.32"
+)
+
+env.Command(
+	"#bin/strip.elf", "#bin/godot.elf" ,"psp-strip bin/godot.elf -o bin/strip.elf"
+)
+
+env.Command(
+	"#bin/strip2.elf", "#bin/strip.elf" ,"psp-strip bin/strip.elf -o bin/strip2.elf"
+)
+
+env.Command(
+	"#bin/EBOOT.PBP", "#bin/strip2.elf" ,"pack-pbp bin/EBOOT.PBP PARAM.SFO NULL          NULL NULL NULL          NULL  bin/strip2.elf NULL"
+)
+
+
