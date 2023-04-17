@@ -105,6 +105,13 @@
 				[b]Note:[/b] This method only works on Android and iOS. On other platforms, it always returns [constant Vector3.ZERO].
 			</description>
 		</method>
+		<method name="get_joy_accelerometer" qualifiers="const">
+			<return type="Vector3" />
+			<argument index="0" name="device" type="int" />
+			<description>
+				Returns the acceleration of the controller's accelerometer sensor, if the controller has one. Otherwise, the method returns [constant Vector3.ZERO].
+			</description>
+		</method>
 		<method name="get_joy_axis" qualifiers="const">
 			<return type="float" />
 			<argument index="0" name="device" type="int" />
@@ -141,11 +148,32 @@
 				Receives a gamepad button from [enum JoystickList] and returns its equivalent name as a string.
 			</description>
 		</method>
+		<method name="get_joy_gravity" qualifiers="const">
+			<return type="Vector3" />
+			<argument index="0" name="device" type="int" />
+			<description>
+				Returns the gravity of the controller's accelerometer sensor, if the controller has one. Otherwise, the method returns [constant Vector3.ZERO].
+			</description>
+		</method>
 		<method name="get_joy_guid" qualifiers="const">
 			<return type="String" />
 			<argument index="0" name="device" type="int" />
 			<description>
 				Returns a SDL2-compatible device GUID on platforms that use gamepad remapping, e.g. [code]030000004c050000c405000000010000[/code]. Returns [code]"Default Gamepad"[/code] otherwise. Godot uses the [url=https://github.com/gabomdq/SDL_GameControllerDB]SDL2 game controller database[/url] to determine gamepad names and mappings based on this GUID.
+			</description>
+		</method>
+		<method name="get_joy_gyroscope" qualifiers="const">
+			<return type="Vector3" />
+			<argument index="0" name="device" type="int" />
+			<description>
+				Returns the rotation rate in rad/s around a controller's X, Y, and Z axes of the gyroscope sensor, if the controller has one. Otherwise, the method returns [constant Vector3.ZERO].
+			</description>
+		</method>
+		<method name="get_joy_magnetometer" qualifiers="const">
+			<return type="Vector3" />
+			<argument index="0" name="device" type="int" />
+			<description>
+				Returns the magnetic field strength in micro-Tesla for all axes of the controller's magnetometer sensor, if the controller has one. Otherwise, the method returns [constant Vector3.ZERO].
 			</description>
 		</method>
 		<method name="get_joy_name">
@@ -346,15 +374,53 @@
 			<return type="void" />
 			<argument index="0" name="value" type="Vector3" />
 			<description>
-				Sets the value of the rotation rate of the gyroscope sensor. Can be used for debugging on devices without a hardware sensor, for example in an editor on a PC.
+				Sets the value of the rotation rate of the device's gyroscope sensor.
+				Can be used for debugging on devices without a hardware sensor, for example in an editor on a PC.
 				[b]Note:[/b] This value can be immediately overwritten by the hardware sensor value on Android and iOS.
+			</description>
+		</method>
+		<method name="set_joy_accelerometer">
+			<return type="void" />
+			<argument index="0" name="device" type="int" />
+			<argument index="1" name="value" type="Vector3" />
+			<description>
+				Sets the acceleration value of the controller's accelerometer sensor.
+				Can be used for debugging on devices without a hardware sensor, for example in an editor on a PC.
+			</description>
+		</method>
+		<method name="set_joy_gravity">
+			<return type="void" />
+			<argument index="0" name="device" type="int" />
+			<argument index="1" name="value" type="Vector3" />
+			<description>
+				Sets the gravity value of the controller's accelerometer sensor.
+				Can be used for debugging on devices without a hardware sensor, for example in an editor on a PC.
+			</description>
+		</method>
+		<method name="set_joy_gyroscope">
+			<return type="void" />
+			<argument index="0" name="device" type="int" />
+			<argument index="1" name="value" type="Vector3" />
+			<description>
+				Sets the value of the rotation rate of the controller's gyroscope sensor.
+				Can be used for debugging on devices without a hardware sensor, for example in an editor on a PC.
+			</description>
+		</method>
+		<method name="set_joy_magnetometer">
+			<return type="void" />
+			<argument index="0" name="device" type="int" />
+			<argument index="1" name="value" type="Vector3" />
+			<description>
+				Sets the value of the magnetic field of the controller's magnetometer sensor.
+				Can be used for debugging on devices without a hardware sensor, for example in an editor on a PC.
 			</description>
 		</method>
 		<method name="set_magnetometer">
 			<return type="void" />
 			<argument index="0" name="value" type="Vector3" />
 			<description>
-				Sets the value of the magnetic field of the magnetometer sensor. Can be used for debugging on devices without a hardware sensor, for example in an editor on a PC.
+				Sets the value of the magnetic field of the device's magnetometer sensor.
+				Can be used for debugging on devices without a hardware sensor, for example in an editor on a PC.
 				[b]Note:[/b] This value can be immediately overwritten by the hardware sensor value on Android and iOS.
 			</description>
 		</method>
