@@ -205,6 +205,26 @@ float InputDefault::get_joy_axis(int p_device, int p_axis) const {
 	}
 }
 
+Vector3 InputDefault::get_joy_gravity(int p_device) const {
+	_THREAD_SAFE_METHOD_
+	return gravity;
+}
+
+Vector3 InputDefault::get_joy_accelerometer(int p_device) const {
+	_THREAD_SAFE_METHOD_
+	return accelerometer;
+}
+
+Vector3 InputDefault::get_joy_magnetometer(int p_device) const {
+	_THREAD_SAFE_METHOD_
+	return magnetometer;
+}
+
+Vector3 InputDefault::get_joy_gyroscope(int p_device) const {
+	_THREAD_SAFE_METHOD_
+	return gyroscope;
+}
+
 String InputDefault::get_joy_name(int p_idx) {
 	_THREAD_SAFE_METHOD_
 	return joy_names[p_idx].name;
@@ -497,6 +517,30 @@ void InputDefault::set_joy_axis(int p_device, int p_axis, float p_value) {
 	_THREAD_SAFE_METHOD_
 	int c = _combine_device(p_axis, p_device);
 	_joy_axis[c] = p_value;
+}
+
+void InputDefault::set_joy_gravity(int p_device, const Vector3 &p_gravity) {
+	_THREAD_SAFE_METHOD_
+
+	gravity = p_gravity;
+}
+
+void InputDefault::set_joy_accelerometer(int p_device, const Vector3 &p_accel) {
+	_THREAD_SAFE_METHOD_
+
+	accelerometer = p_accel;
+}
+
+void InputDefault::set_joy_magnetometer(int p_device, const Vector3 &p_magnetometer) {
+	_THREAD_SAFE_METHOD_
+
+	magnetometer = p_magnetometer;
+}
+
+void InputDefault::set_joy_gyroscope(int p_device, const Vector3 &p_gyroscope) {
+	_THREAD_SAFE_METHOD_
+
+	gyroscope = p_gyroscope;
 }
 
 void InputDefault::start_joy_vibration(int p_device, float p_weak_magnitude, float p_strong_magnitude, float p_duration) {

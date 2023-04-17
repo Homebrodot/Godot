@@ -226,6 +226,10 @@ public:
 	virtual float get_action_raw_strength(const StringName &p_action, bool p_exact = false) const;
 
 	virtual float get_joy_axis(int p_device, int p_axis) const;
+	virtual Vector3 get_joy_gravity(int p_device) const;
+	virtual Vector3 get_joy_accelerometer(int p_device) const;
+	virtual Vector3 get_joy_magnetometer(int p_device) const;
+	virtual Vector3 get_joy_gyroscope(int p_device) const;
 	String get_joy_name(int p_idx);
 	virtual Array get_connected_joypads();
 	virtual Vector2 get_joy_vibration_strength(int p_device);
@@ -252,6 +256,10 @@ public:
 	virtual void set_magnetometer(const Vector3 &p_magnetometer);
 	virtual void set_gyroscope(const Vector3 &p_gyroscope);
 	void set_joy_axis(int p_device, int p_axis, float p_value);
+	virtual void set_joy_gravity(int p_device, const Vector3 &p_gravity);
+	virtual void set_joy_accelerometer(int p_device, const Vector3 &p_accel);
+	virtual void set_joy_magnetometer(int p_device, const Vector3 &p_magnetometer);
+	virtual void set_joy_gyroscope(int p_device, const Vector3 &p_gyroscope);
 
 	virtual void start_joy_vibration(int p_device, float p_weak_magnitude, float p_strong_magnitude, float p_duration = 0);
 	virtual void stop_joy_vibration(int p_device);
