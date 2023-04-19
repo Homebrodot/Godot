@@ -136,16 +136,16 @@ void ProjectSettings::set_ignore_value_in_docs(const String &p_name, bool p_igno
 	ERR_FAIL_COND_MSG(!props.has(p_name), "Request for nonexistent project setting: " + p_name + ".");
 #ifdef DEBUG_METHODS_ENABLED
 	props[p_name].ignore_value_in_docs = p_ignore;
-#endif
+#endif // DEBUG_METHODS_ENABLED
 }
 
 bool ProjectSettings::get_ignore_value_in_docs(const String &p_name) const {
 	ERR_FAIL_COND_V_MSG(!props.has(p_name), false, "Request for nonexistent project setting: " + p_name + ".");
 #ifdef DEBUG_METHODS_ENABLED
 	return props[p_name].ignore_value_in_docs;
-#else
+#else // DEBUG_METHODS_ENABLED
 	return false;
-#endif
+#endif // DEBUG_METHODS_ENABLED
 }
 
 String ProjectSettings::globalize_path(const String &p_path) const {
@@ -418,7 +418,15 @@ Error ProjectSettings::_setup(const String &p_path, const String &p_main_pack, b
 			// Attempt to load PCK from macOS .app bundle resources.
 			found = _load_resource_pack(OS::get_singleton()->get_bundle_resource_dir().plus_file(exec_basename + ".pck")) || _load_resource_pack(OS::get_singleton()->get_bundle_resource_dir().plus_file(exec_filename + ".pck"));
 		}
-#endif
+#endif // OSX_ENABLED
+
+#ifdef HORIZON_ENABLED
+		if (!found) {
+			if (_load_resource_pack("romfs:/game.pck")) {
+				found = true;
+			}
+		}
+#endif // HORIZON_ENABLED
 
 		if (!found) {
 			// Try to load data pack at the location of the executable.

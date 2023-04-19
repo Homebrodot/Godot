@@ -31,7 +31,7 @@
 #include "net_socket_posix.h"
 
 #ifndef UNIX_SOCKET_UNAVAILABLE
-#if defined(UNIX_ENABLED)
+#if defined(UNIX_ENABLED) || defined(VITA_ENABLED) || defined(HORIZON_ENABLED)
 
 #include <errno.h>
 #include <netdb.h>
@@ -39,18 +39,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef VITA_ENABLED
 #include <sys/ioctl.h>
+#endif // !VITA_ENABLED
 #include <sys/types.h>
 #include <unistd.h>
 #ifndef NO_FCNTL
 #include <fcntl.h>
-#else
+#else // NO_FCNTL
 #include <sys/ioctl.h>
-#endif
+#endif // NO_FCNTL
 #include <netinet/in.h>
 
 #include <sys/socket.h>
-#ifdef JAVASCRIPT_ENABLED
+#if defined(JAVASCRIPT_ENABLED) || defined(VITA_ENABLED) || defined(HORIZON_ENABLED)
+#define IPPROTO_IPV6 41
+#define IPV6_V6ONLY 26
 #include <arpa/inet.h>
 #endif
 
@@ -93,10 +97,11 @@
 #define SIO_UDP_NETRESET _WSAIOW(IOC_VENDOR, 15)
 #endif
 
-#endif
+#endif // UNIX_ENABLED || VITA_ENABLED || HORIZON_ENABLED / WINDOWS ENABLED
 
 size_t NetSocketPosix::_set_addr_storage(struct sockaddr_storage *p_addr, const IP_Address &p_ip, uint16_t p_port, IP::Type p_ip_type) {
 	memset(p_addr, 0, sizeof(struct sockaddr_storage));
+#ifndef VITA_ENABLED
 	if (p_ip_type == IP::TYPE_IPV6 || p_ip_type == IP::TYPE_ANY) { // IPv6 socket
 
 		// IPv6 only socket with IPv4 address
@@ -111,8 +116,9 @@ size_t NetSocketPosix::_set_addr_storage(struct sockaddr_storage *p_addr, const 
 			addr6->sin6_addr = in6addr_any;
 		}
 		return sizeof(sockaddr_in6);
-	} else { // IPv4 socket
-
+	} else
+#endif // !VITA_ENABLED
+	{ // IPv4 socket
 		// IPv4 socket with IPv6 address
 		ERR_FAIL_COND_V(!p_ip.is_wildcard() && !p_ip.is_ipv4(), 0);
 
@@ -155,7 +161,7 @@ void NetSocketPosix::make_default() {
 		WSADATA data;
 		WSAStartup(MAKEWORD(2, 2), &data);
 	}
-#endif
+#endif // WINDOWS_ENABLED
 	_create = _create_func;
 }
 
@@ -165,7 +171,7 @@ void NetSocketPosix::cleanup() {
 		WSACleanup();
 	}
 	_create = NULL;
-#endif
+#endif // WINDOWS_ENABLED
 }
 
 NetSocketPosix::NetSocketPosix() :
@@ -183,7 +189,7 @@ NetSocketPosix::~NetSocketPosix() {
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wlogical-op"
-#endif
+#endif // __GNUC__ && !__clang__
 
 NetSocketPosix::NetError NetSocketPosix::_get_socket_error() const {
 #if defined(WINDOWS_ENABLED)
@@ -197,7 +203,7 @@ NetSocketPosix::NetError NetSocketPosix::_get_socket_error() const {
 		return ERR_NET_WOULD_BLOCK;
 	print_verbose("Socket error: " + itos(err));
 	return ERR_NET_OTHER;
-#else
+#else // WINDOWS_ENABLED
 	if (errno == EISCONN) {
 		return ERR_NET_IS_CONNECTED;
 	}
@@ -209,12 +215,12 @@ NetSocketPosix::NetError NetSocketPosix::_get_socket_error() const {
 	}
 	print_verbose("Socket error: " + itos(errno));
 	return ERR_NET_OTHER;
-#endif
+#endif // WINDOWS_ENABLED
 }
 
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
-#endif
+#endif // __GNUC__ && !__clang__
 
 bool NetSocketPosix::_can_use_ip(const IP_Address &p_ip, const bool p_for_bind) const {
 	if (p_for_bind && !(p_ip.is_valid() || p_ip.is_wildcard())) {
@@ -270,11 +276,13 @@ _FORCE_INLINE_ Error NetSocketPosix::_change_multicast_group(IP_Address p_ip, St
 		memcpy(&greq.imr_interface, if_ip.get_ipv4(), 4);
 		ret = setsockopt(_sock, level, sock_opt, (const char *)&greq, sizeof(greq));
 	} else {
+#if !defined(VITA_ENABLED) && !defined(HORIZON_ENABLED)
 		struct ipv6_mreq greq;
 		int sock_opt = p_add ? IPV6_ADD_MEMBERSHIP : IPV6_DROP_MEMBERSHIP;
 		memcpy(&greq.ipv6mr_multiaddr, p_ip.get_ipv6(), 16);
 		greq.ipv6mr_interface = if_v6id;
 		ret = setsockopt(_sock, level, sock_opt, (const char *)&greq, sizeof(greq));
+#endif // !VITA_ENABLED && !HORIZON_ENABLED
 	}
 	ERR_FAIL_COND_V(ret != 0, FAILED);
 
@@ -295,11 +303,11 @@ void NetSocketPosix::_set_close_exec_enabled(bool p_enabled) {
 #if defined(NO_FCNTL)
 	unsigned long par = p_enabled ? 1 : 0;
 	SOCK_IOCTL(_sock, FIOCLEX, &par);
-#else
+#else // NO_FCNTL
 	int opts = fcntl(_sock, F_GETFD);
 	fcntl(_sock, F_SETFD, opts | FD_CLOEXEC);
-#endif
-#endif
+#endif // NO_FCNTL
+#endif // WINDOWS_ENABLED
 }
 
 Error NetSocketPosix::open(Type p_sock_type, IP::Type &ip_type) {
@@ -310,7 +318,7 @@ Error NetSocketPosix::open(Type p_sock_type, IP::Type &ip_type) {
 	// OpenBSD does not support dual stacking, fallback to IPv4 only.
 	if (ip_type == IP::TYPE_ANY)
 		ip_type = IP::TYPE_IPV4;
-#endif
+#endif // __OpenBSD__
 
 	int family = ip_type == IP::TYPE_IPV4 ? AF_INET : AF_INET6;
 	int protocol = p_sock_type == TYPE_TCP ? IPPROTO_TCP : IPPROTO_UDP;
@@ -357,14 +365,14 @@ Error NetSocketPosix::open(Type p_sock_type, IP::Type &ip_type) {
 			print_verbose("Unable to turn off UDP WSAENETRESET behavior on Windows");
 		}
 	}
-#endif
+#endif // WINDOWS_ENABLED
 #if defined(SO_NOSIGPIPE)
 	// Disable SIGPIPE (should only be relevant to stream sockets, but seems to affect UDP too on iOS)
 	int par = 1;
 	if (setsockopt(_sock, SOL_SOCKET, SO_NOSIGPIPE, SOCK_CBUF(&par), sizeof(int)) != 0) {
 		print_verbose("Unable to turn off SIGPIPE on socket");
 	}
-#endif
+#endif // SO_NOSIGPIPE
 	return OK;
 }
 
@@ -492,7 +500,7 @@ Error NetSocketPosix::poll(PollType p_type, int p_timeout) const {
 		ready = true;
 
 	return ready ? OK : ERR_BUSY;
-#else
+#else // WINDOWS_ENABLED
 	struct pollfd pfd;
 	pfd.fd = _sock;
 	pfd.events = POLLIN;
@@ -522,7 +530,7 @@ Error NetSocketPosix::poll(PollType p_type, int p_timeout) const {
 	}
 
 	return OK;
-#endif
+#endif // WINDOWS_ENABLED
 }
 
 Error NetSocketPosix::recv(uint8_t *p_buffer, int p_len, int &r_read) {
@@ -584,7 +592,7 @@ Error NetSocketPosix::send(const uint8_t *p_buffer, int p_len, int &r_sent) {
 	if (_is_stream) {
 		flags = MSG_NOSIGNAL;
 	}
-#endif
+#endif // MSG_NOSIGNAL
 	r_sent = ::send(_sock, SOCK_CBUF(p_buffer), p_len, flags);
 
 	if (r_sent < 0) {
@@ -640,14 +648,17 @@ void NetSocketPosix::set_blocking_enabled(bool p_enabled) {
 #if defined(WINDOWS_ENABLED) || defined(NO_FCNTL)
 	unsigned long par = p_enabled ? 0 : 1;
 	ret = SOCK_IOCTL(_sock, FIONBIO, &par);
-#else
+#elif defined(VITA_ENABLED)
+	int par = p_enabled ? 0 : 1;
+	ret = ::setsockopt(_sock, SOL_SOCKET, SO_NONBLOCK, &par, sizeof(int));
+#else // VITA_ENABLED
 	int opts = fcntl(_sock, F_GETFL);
 	if (p_enabled) {
 		ret = fcntl(_sock, F_SETFL, opts & ~O_NONBLOCK);
 	} else {
 		ret = fcntl(_sock, F_SETFL, opts | O_NONBLOCK);
 	}
-#endif
+#endif // WINDOWS_ENABLED || NO_FCNTL / VITA_ENABLED
 
 	if (ret != 0)
 		WARN_PRINT("Unable to change non-block mode");
@@ -684,7 +695,7 @@ void NetSocketPosix::set_reuse_address_enabled(bool p_enabled) {
 	if (setsockopt(_sock, SOL_SOCKET, SO_REUSEADDR, SOCK_CBUF(&par), sizeof(int)) < 0) {
 		WARN_PRINT("Unable to set socket REUSEADDR option!");
 	}
-#endif
+#endif // WINDOWS_ENABLED
 }
 
 void NetSocketPosix::set_reuse_port_enabled(bool p_enabled) {
@@ -693,7 +704,7 @@ void NetSocketPosix::set_reuse_port_enabled(bool p_enabled) {
 // See comment above...
 #ifdef WINDOWS_ENABLED
 #define SO_REUSEPORT SO_REUSEADDR
-#endif
+#endif // WINDOWS_ENABLED
 	int par = p_enabled ? 1 : 0;
 	if (setsockopt(_sock, SOL_SOCKET, SO_REUSEPORT, SOCK_CBUF(&par), sizeof(int)) < 0) {
 		WARN_PRINT("Unable to set socket REUSEPORT option!");
@@ -706,9 +717,13 @@ bool NetSocketPosix::is_open() const {
 
 int NetSocketPosix::get_available_bytes() const {
 	ERR_FAIL_COND_V(!is_open(), -1);
-
+#if defined(VITA_ENABLED)
+	ssize_t ret = ::recv(_sock, NULL, 0, MSG_PEEK);
+	ssize_t len = ret;
+#else // VITA_ENABLED
 	unsigned long len;
 	int ret = SOCK_IOCTL(_sock, FIONREAD, &len);
+#endif // VITA_ENABLED
 	if (ret == -1) {
 		_get_socket_error();
 		print_verbose("Error when checking available bytes on socket.");
@@ -745,4 +760,4 @@ Error NetSocketPosix::join_multicast_group(const IP_Address &p_multi_address, St
 Error NetSocketPosix::leave_multicast_group(const IP_Address &p_multi_address, String p_if_name) {
 	return _change_multicast_group(p_multi_address, p_if_name, false);
 }
-#endif
+#endif // UNIX_SOCKET_UNAVAILABLE

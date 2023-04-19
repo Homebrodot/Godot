@@ -1,5 +1,23 @@
 name: 🌐 JavaScript Builds
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - ".github/workflows/**"
+      - "platform/**"
+      - "!.github/workflows/javascript_builds.yml"
+      - "!platform/register_platform_apis.h"
+      - "!platform/SCsub"
+      - "!platform/server/**"
+      - "!platform/javascript/**"
+  pull_request:
+    paths-ignore:
+      - ".github/workflows/**"
+      - "platform/**"
+      - "!.github/workflows/javascript_builds.yml"
+      - "!platform/register_platform_apis.h"
+      - "!platform/SCsub"
+      - "!platform/server/**"
+      - "!platform/javascript/**"
 
 # Global Settings
 env:
@@ -15,7 +33,7 @@ concurrency:
 
 jobs:
   javascript-template:
-    runs-on: "ubuntu-20.04"
+    runs-on: ubuntu-20.04
     name: Template (target=release, tools=no)
 
     steps:

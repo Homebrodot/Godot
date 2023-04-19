@@ -38,14 +38,14 @@
 #ifdef WINDOWS_ENABLED
 #include <stdint.h>
 #include <winsock2.h>
-#endif
-#ifdef UNIX_ENABLED
+#endif // WINDOWS_ENABLED
+#if defined(UNIX_ENABLED) || defined(HORIZON_ENABLED)
 #include <arpa/inet.h>
-#endif
+#endif // UNIX_ENABLED || HORIZON_ENABLED
 
 #ifdef MSG_MAXIOVLEN
 #define ENET_BUFFER_MAXIMUM MSG_MAXIOVLEN
-#endif
+#endif // MSG_MAXIOVLEN
 
 typedef void *ENetSocket;
 

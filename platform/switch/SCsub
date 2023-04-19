@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+import version
+
+Import("env")
+
+files = [
+    "godot_switch.cpp",
+    "os_switch.cpp",
+    "power_switch.cpp",
+    "joypad_switch.cpp",
+    "audio_driver_switch.cpp",
+    "context_gl_switch_egl.cpp",
+]
+
+prog = env.add_program("#bin/godot", files)
+build_target = env["target"]
+env.Command(
+    "#bin/switch_" + env["target"] + ".nro",
+    prog,
+    "/opt/devkitpro/tools/bin/elf2nro $SOURCE $TARGET --icon=platform/switch/icon.jpg --nacp=platform/switch/nacp_default.nacp --romfsdir=platform/switch/romfs",
+)
+env.Depends(target="#bin/switch_" + env["target"] + ".nro", dependency="nacp_default.nacp")
+
+version_str = "{}.{}.{}-{}".format(version.major, version.minor, version.patch, version.status)
+
+env.Command(
+    "nacp_default.nacp",
+    None,
+    "/opt/devkitpro/tools/bin/nacptool --create Godot 'Stary & Cpasjuste' " + version_str + " $TARGET",
+)
+
+# if someone needs this they can enable it themselves..
+# env.Command("#bin/switch_" + env['target'] + ".nso", prog, "/opt/devkitpro/tools/bin/elf2nso $SOURCE $TARGET")

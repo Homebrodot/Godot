@@ -35,7 +35,7 @@
 extern "C" {
 #endif
 
-#if defined(_WIN32) || defined(__ANDROID__)
+#if defined(_WIN32) || defined(__ANDROID__) || defined(__SWITCH__)
 #define GDCALLINGCONV
 #define GDAPI GDCALLINGCONV
 #elif defined(__APPLE__)
@@ -47,10 +47,10 @@ extern "C" {
 #define GDCALLINGCONV __attribute__((sysv_abi))
 #define GDAPI GDCALLINGCONV
 #endif
-#else // !_WIN32 && !__APPLE__
+#else // !_WIN32 && !__APPLE__ && !__SWITCH__
 #define GDCALLINGCONV __attribute__((sysv_abi))
 #define GDAPI GDCALLINGCONV
-#endif
+#endif // _WIN32 || __ANDROID__ || __SWITCH__
 
 // This is for libraries *using* the header, NOT GODOT EXPOSING STUFF!!
 #if !defined(GDN_EXPORT)
@@ -58,10 +58,10 @@ extern "C" {
 #define GDN_EXPORT __declspec(dllexport)
 #elif defined(__GNUC__)
 #define GDN_EXPORT __attribute__((visibility("default")))
-#else
+#else // __GNUC__
 #define GDN_EXPORT
-#endif
-#endif
+#endif // _WIN32 / __GNUC__
+#endif // !GDN_EXPORT
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -299,6 +299,6 @@ godot_object GDAPI *godot_instance_from_id(godot_int p_instance_id);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 
 #endif // GDNATIVE_GDNATIVE_H

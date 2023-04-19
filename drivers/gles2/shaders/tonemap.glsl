@@ -5,10 +5,10 @@
 #define lowp
 #define mediump
 #define highp
-#else
+#else // USE_GLES_OVER_GL
 precision highp float;
 precision highp int;
-#endif
+#endif // USE_GLES_OVER_GL
 
 attribute vec2 vertex_attrib; // attrib:0
 /* clang-format on */
@@ -28,41 +28,39 @@ void main() {
 
 // texture2DLodEXT and textureCubeLodEXT are fragment shader specific.
 // Do not copy these defines in the vertex section.
-#ifndef USE_GLES_OVER_GL
-#ifdef GL_EXT_shader_texture_lod
+#if !defined(USE_GLES_OVER_GL) && !defined(VITA_ENABLED) && defined(GL_EXT_shader_texture_lod)
 #extension GL_EXT_shader_texture_lod : enable
 #define texture2DLod(img, coord, lod) texture2DLodEXT(img, coord, lod)
 #define textureCubeLod(img, coord, lod) textureCubeLodEXT(img, coord, lod)
-#endif
-#endif // !USE_GLES_OVER_GL
+#endif // !USE_GLES_OVER_GL && !VITA_ENABLED && GL_EXT_shader_texture_lod
 
-#ifdef GL_ARB_shader_texture_lod
+#if defined(GL_ARB_shader_texture_lod) && !defined(VITA_ENABLED)
 #extension GL_ARB_shader_texture_lod : enable
-#endif
+#endif // GL_ARB_shader_texture_lod
 
-#if !defined(GL_EXT_shader_texture_lod) && !defined(GL_ARB_shader_texture_lod)
+#if ( !defined(GL_EXT_shader_texture_lod) && !defined(GL_ARB_shader_texture_lod) ) || defined(VITA_ENABLED)
 #define texture2DLod(img, coord, lod) texture2D(img, coord, lod)
 #define textureCubeLod(img, coord, lod) textureCube(img, coord, lod)
-#endif
+#endif // (!GL_EXT_shader_texture_lod && !GL_ARB_shader_texture_lod) || VITA_ENABLED
 
 // Allows the use of bitshift operators for bicubic upscale
 #ifdef GL_EXT_gpu_shader4
 #extension GL_EXT_gpu_shader4 : enable
-#endif
+#endif // GL_EXT_gpu_shader4
 
 #ifdef USE_GLES_OVER_GL
 #define lowp
 #define mediump
 #define highp
-#else
+#else // USE_GLES_OVER_GL
 #if defined(USE_HIGHP_PRECISION)
 precision highp float;
 precision highp int;
-#else
+#else // USE_HIGHP_PRECISSION
 precision mediump float;
 precision mediump int;
-#endif
-#endif
+#endif // USE_HIGHP_PRECISSION
+#endif // USE_GLES_OVER_GL
 
 #include "stdlib.glsl"
 
@@ -83,28 +81,28 @@ uniform highp sampler2D source_glow5; //texunit:6
 uniform highp sampler2D source_glow6; //texunit:7
 #ifdef USE_GLOW_LEVEL7
 uniform highp sampler2D source_glow7; //texunit:8
-#endif
-#else
+#endif // USE_GLOW_LEVEL7
+#else // USE_MULTI_TEXTURE_GLOW
 uniform highp sampler2D source_glow; //texunit:2
-#endif
+#endif // USE_MULTI_TEXTURE_GLOW
 uniform highp float glow_intensity;
-#endif
+#endif // USE_GLOW_LEVEL1 || USE_GLOW_LEVEL2 || USE_GLOW_LEVEL3|| USE_GLOW_LEVEL4 || USE_GLOW_LEVEL5 || USE_GLOW_LEVEL6 || USE_GLOW_LEVEL7
 
 #ifdef USE_BCS
 uniform vec3 bcs;
-#endif
+#endif // USE_BCS
 
 #ifdef USE_FXAA
 uniform vec2 pixel_size;
-#endif
+#endif // USE_FXAA
 
 #ifdef USE_SHARPENING
 uniform float sharpen_intensity;
-#endif
+#endif // USE_SHARPENING
 
 #ifdef USE_COLOR_CORRECTION
 uniform sampler2D color_correction; //texunit:1
-#endif
+#endif // USE_COLOR_CORRECTION
 
 #ifdef GL_EXT_gpu_shader4
 #ifdef USE_GLOW_FILTER_BICUBIC
@@ -183,11 +181,11 @@ vec4 texture2D_bicubic(sampler2D tex, vec2 uv, int p_lod) {
 vec4 apply_glow(vec4 color, vec3 glow) { // apply glow using the selected blending mode
 #ifdef USE_GLOW_REPLACE
 	color.rgb = glow;
-#endif
+#endif // USE_GLOW_REPLACE
 
 #ifdef USE_GLOW_SCREEN
 	color.rgb = max((color.rgb + glow) - (color.rgb * glow), vec3(0.0));
-#endif
+#endif // USE_GLOW_SCREEN
 
 #ifdef USE_GLOW_SOFTLIGHT
 	glow = glow * vec3(0.5) + vec3(0.5);
@@ -195,11 +193,11 @@ vec4 apply_glow(vec4 color, vec3 glow) { // apply glow using the selected blendi
 	color.r = (glow.r <= 0.5) ? (color.r - (1.0 - 2.0 * glow.r) * color.r * (1.0 - color.r)) : (((glow.r > 0.5) && (color.r <= 0.25)) ? (color.r + (2.0 * glow.r - 1.0) * (4.0 * color.r * (4.0 * color.r + 1.0) * (color.r - 1.0) + 7.0 * color.r)) : (color.r + (2.0 * glow.r - 1.0) * (sqrt(color.r) - color.r)));
 	color.g = (glow.g <= 0.5) ? (color.g - (1.0 - 2.0 * glow.g) * color.g * (1.0 - color.g)) : (((glow.g > 0.5) && (color.g <= 0.25)) ? (color.g + (2.0 * glow.g - 1.0) * (4.0 * color.g * (4.0 * color.g + 1.0) * (color.g - 1.0) + 7.0 * color.g)) : (color.g + (2.0 * glow.g - 1.0) * (sqrt(color.g) - color.g)));
 	color.b = (glow.b <= 0.5) ? (color.b - (1.0 - 2.0 * glow.b) * color.b * (1.0 - color.b)) : (((glow.b > 0.5) && (color.b <= 0.25)) ? (color.b + (2.0 * glow.b - 1.0) * (4.0 * color.b * (4.0 * color.b + 1.0) * (color.b - 1.0) + 7.0 * color.b)) : (color.b + (2.0 * glow.b - 1.0) * (sqrt(color.b) - color.b)));
-#endif
+#endif // USE_GLOW_SOFTLIGHT
 
 #if !defined(USE_GLOW_SCREEN) && !defined(USE_GLOW_SOFTLIGHT) && !defined(USE_GLOW_REPLACE) // no other selected -> additive
 	color.rgb += glow;
-#endif
+#endif // !USE_GLOW_SCREEN && !USE_GLOW_SOFTLIGHT && !USE_GLOW_REPLACE
 
 #ifndef USE_GLOW_SOFTLIGHT // softlight has no effect on black color
 	// compute the alpha from glow
@@ -210,7 +208,7 @@ vec4 apply_glow(vec4 color, vec3 glow) { // apply glow using the selected blendi
 	} else if (color.a < 1.0) {
 		color.rgb /= color.a;
 	}
-#endif
+#endif // USE_GLOW_SOFTLIGHT
 
 	return color;
 }
@@ -249,13 +247,13 @@ vec4 apply_fxaa(vec4 color, vec2 uv_interp, vec2 pixel_size) {
 	float lumaSW = dot(rgbSW.rgb, luma);
 	float lumaSE = dot(rgbSE.rgb, luma);
 	float lumaM = dot(rgbM, luma);
-#else
+#else // DISABLE_ALPHA
 	float lumaNW = dot(rgbNW.rgb, luma) - ((1.0 - rgbNW.a) / 8.0);
 	float lumaNE = dot(rgbNE.rgb, luma) - ((1.0 - rgbNE.a) / 8.0);
 	float lumaSW = dot(rgbSW.rgb, luma) - ((1.0 - rgbSW.a) / 8.0);
 	float lumaSE = dot(rgbSE.rgb, luma) - ((1.0 - rgbSE.a) / 8.0);
 	float lumaM = dot(rgbM, luma) - (color.a / 8.0);
-#endif
+#endif // DISABLE_ALPHA
 
 	float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
 	float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
@@ -281,7 +279,7 @@ vec4 apply_fxaa(vec4 color, vec2 uv_interp, vec2 pixel_size) {
 	float lumaB = dot(rgbB.rgb, luma);
 	vec4 color_output = ((lumaB < lumaMin) || (lumaB > lumaMax)) ? rgbA : rgbB;
 	return vec4(color_output.rgb, 1.0);
-#else
+#else // DISABLE_ALPHA
 	float lumaB = dot(rgbB.rgb, luma) - ((1.0 - rgbB.a) / 8.0);
 	vec4 color_output = ((lumaB < lumaMin) || (lumaB > lumaMax)) ? rgbA : rgbB;
 	if (color_output.a == 0.0) {
@@ -290,7 +288,7 @@ vec4 apply_fxaa(vec4 color, vec2 uv_interp, vec2 pixel_size) {
 		color_output.rgb /= color_output.a;
 	}
 	return color_output;
-#endif
+#endif // DISABLE_ALPHA
 }
 
 void main() {
@@ -298,11 +296,11 @@ void main() {
 
 #ifdef DISABLE_ALPHA
 	color.a = 1.0;
-#endif
+#endif // DISABLE_ALPHA
 
 #ifdef USE_FXAA
 	color = apply_fxaa(color, uv_interp, pixel_size);
-#endif
+#endif // USE_FXAA
 
 	// Glow
 
@@ -323,62 +321,62 @@ void main() {
 	glow += GLOW_TEXTURE_SAMPLE(source_glow6, uv_interp, 0).rgb;
 #ifdef USE_GLOW_LEVEL7
 	glow += GLOW_TEXTURE_SAMPLE(source_glow7, uv_interp, 0).rgb;
-#endif
-#endif
-#endif
-#endif
-#endif
-#endif
-#endif
+#endif // USE_GLOW_LEVEL7
+#endif // USE_GLOW_LEVEL6
+#endif // USE_GLOW_LEVEL5
+#endif // USE_GLOW_LEVEL4
+#endif // USE_GLOW_LEVEL3
+#endif // USE_GLOW_LEVEL2
+#endif // USE_GLOW_LEVEL1
 
-#else
+#else // USE_MULTI_TEXTURE_GLOW
 
 #ifdef USE_GLOW_LEVEL1
 	glow += GLOW_TEXTURE_SAMPLE(source_glow, uv_interp, 1).rgb;
-#endif
+#endif // USE_GLOW_LEVEL1
 
 #ifdef USE_GLOW_LEVEL2
 	glow += GLOW_TEXTURE_SAMPLE(source_glow, uv_interp, 2).rgb;
-#endif
+#endif // USE_GLOW_LEVEL2
 
 #ifdef USE_GLOW_LEVEL3
 	glow += GLOW_TEXTURE_SAMPLE(source_glow, uv_interp, 3).rgb;
-#endif
+#endif // USE_GLOW_LEVEL3
 
 #ifdef USE_GLOW_LEVEL4
 	glow += GLOW_TEXTURE_SAMPLE(source_glow, uv_interp, 4).rgb;
-#endif
+#endif // USE_GLOW_LEVEL4
 
 #ifdef USE_GLOW_LEVEL5
 	glow += GLOW_TEXTURE_SAMPLE(source_glow, uv_interp, 5).rgb;
-#endif
+#endif // USE_GLOW_LEVEL5
 
 #ifdef USE_GLOW_LEVEL6
 	glow += GLOW_TEXTURE_SAMPLE(source_glow, uv_interp, 6).rgb;
-#endif
+#endif // USE_GLOW_LEVEL6
 
 #ifdef USE_GLOW_LEVEL7
 	glow += GLOW_TEXTURE_SAMPLE(source_glow, uv_interp, 7).rgb;
-#endif
-#endif //USE_MULTI_TEXTURE_GLOW
+#endif // USE_GLOW_LEVEL7
+#endif // USE_MULTI_TEXTURE_GLOW
 
 	glow *= glow_intensity;
 	color = apply_glow(color, glow);
-#endif
+#endif // USING_GLOW
 
 	// Additional effects
 
 #ifdef USE_BCS
 	color.rgb = apply_bcs(color.rgb, bcs);
-#endif
+#endif // USE_BCS
 
 #ifdef USE_COLOR_CORRECTION
 	color.rgb = apply_color_correction(color.rgb, color_correction);
-#endif
+#endif // USE_COLOR_CORRECTION
 
 	gl_FragColor = color;
 
 #ifdef DISABLE_ALPHA
 	gl_FragColor.a = 1.0;
-#endif
+#endif // DISABLE_ALPHA
 }

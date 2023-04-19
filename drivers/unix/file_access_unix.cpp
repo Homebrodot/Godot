@@ -40,27 +40,27 @@
 
 #include <errno.h>
 
-#if defined(UNIX_ENABLED)
+#if defined(UNIX_ENABLED) || defined(HORIZON_ENABLED)
 #include <unistd.h>
-#endif
+#endif // UNIX_ENABLED || HORIZON_ENABLED
 
 #ifndef ANDROID_ENABLED
 #include <sys/statvfs.h>
-#endif
+#endif // ANDROID_ENABLED
 
 #ifdef MSVC
 #define S_ISREG(m) ((m)&_S_IFREG)
 #include <io.h>
-#endif
+#endif // MSVC
 #ifndef S_ISREG
 #define S_ISREG(m) ((m)&S_IFREG)
-#endif
+#endif // !S_ISREG
 
 #ifndef NO_FCNTL
 #include <fcntl.h>
-#else
+#else // NO_FCNTL
 #include <sys/ioctl.h>
-#endif
+#endif // NO_FCNTL
 
 void FileAccessUnix::check_errors() const {
 	ERR_FAIL_COND_MSG(!f, "File must be opened before use.");
@@ -130,6 +130,7 @@ Error FileAccessUnix::_open(const String &p_path, int p_mode_flags) {
 		return last_error;
 	}
 
+#ifndef HORIZON_ENABLED
 	// Set close on exec to avoid leaking it to subprocesses.
 	int fd = fileno(f);
 
@@ -137,12 +138,12 @@ Error FileAccessUnix::_open(const String &p_path, int p_mode_flags) {
 #if defined(NO_FCNTL)
 		unsigned long par = 0;
 		ioctl(fd, FIOCLEX, &par);
-#else
+#else // NO_FCNTL
 		int opts = fcntl(fd, F_GETFD);
 		fcntl(fd, F_SETFD, opts | FD_CLOEXEC);
-#endif
+#endif // NO_FCNTL
 	}
-
+#endif // !HORIZON_ENABLED
 	last_error = OK;
 	flags = p_mode_flags;
 	return OK;
@@ -279,15 +280,16 @@ bool FileAccessUnix::file_exists(const String &p_path) {
 		return false;
 	}
 
-#ifdef UNIX_ENABLED
+#ifndef VITA_ENABLED
+#if defined(UNIX_ENABLED) || defined(HORIZON_ENABLED)
 	// See if we have access to the file
 	if (access(filename.utf8().get_data(), F_OK)) {
+#else // UNIX_ENABLED || HORIZON_ENABLED
+	if (_access(filename.utf8().get_data(), 4) == -1) {
+#endif // UNIX_ENABLED || HORIZON_ENABLED
 		return false;
 	}
-#else
-	if (_access(filename.utf8().get_data(), 4) == -1)
-		return false;
-#endif
+#endif // !VITA_ENABLED
 
 	// See if this is a regular file
 	switch (st.st_mode & S_IFMT) {

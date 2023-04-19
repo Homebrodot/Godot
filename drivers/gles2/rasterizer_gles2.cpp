@@ -60,29 +60,33 @@
 #ifndef GLAPIENTRY
 #if defined(WINDOWS_ENABLED) && !defined(UWP_ENABLED)
 #define GLAPIENTRY APIENTRY
-#else
+#else // WINDOWS_ENABLED && !UWP_ENABLED
 #define GLAPIENTRY
-#endif
-#endif
+#endif // WINDOWS_ENABLED && !UWP_ENABLED
+#endif // !GLAPIENTRY
 
 #ifndef IPHONE_ENABLED
 // We include EGL below to get debug callback on GLES2 platforms,
 // but EGL is not available on iOS.
 #define CAN_DEBUG
-#endif
+#endif // IPHONE_ENABLED
 
 #if !defined(GLES_OVER_GL) && defined(CAN_DEBUG)
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #include <GLES2/gl2platform.h>
 
+#ifdef VITA_ENABLED
+#include <psp2/types.h>
+#endif // VITA_ENABLED
+
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#endif
+#endif // !GLES_OVER_GL && CAN_DEBUG
 
 #if defined(MINGW_ENABLED) || defined(_MSC_VER)
 #define strcpy strcpy_s
-#endif
+#endif // MINGW_ENABLED || _MSC_VER
 
 #ifdef CAN_DEBUG
 static void GLAPIENTRY _gl_debug_print(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const GLvoid *userParam) {

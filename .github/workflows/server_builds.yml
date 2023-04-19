@@ -1,5 +1,19 @@
 name: ☁ Server Builds
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - ".github/workflows/**"
+      - "platform/**"
+      - "!.github/workflows/server_builds.yml"
+      - "!platform/server/**"
+      - "!platform/*/export/**"
+  pull_request:
+    paths-ignore:
+      - ".github/workflows/**"
+      - "platform/**"
+      - "!.github/workflows/server_builds.yml"
+      - "!platform/server/**"
+      - "!platform/*/export/**"
 
 # Global Settings
 env:
@@ -13,7 +27,7 @@ concurrency:
 
 jobs:
   build-server:
-    runs-on: "ubuntu-20.04"
+    runs-on: ubuntu-20.04
     name: ${{ matrix.name }}
     strategy:
       fail-fast: false

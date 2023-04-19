@@ -5,10 +5,10 @@
 #define lowp
 #define mediump
 #define highp
-#else
+#else // USE_GLES_OVER_GL
 precision highp float;
 precision highp int;
-#endif
+#endif // USE_GLES_OVER_GL
 
 uniform highp mat4 projection_matrix;
 /* clang-format on */
@@ -22,14 +22,14 @@ attribute highp vec2 vertex; // attrib:0
 #ifdef USE_ATTRIB_LIGHT_ANGLE
 // shared with tangent, not used in canvas shader
 attribute highp float light_angle; // attrib:2
-#endif
+#endif // USE_ATTRIB_LIGHT_ANGLE
 
 attribute vec4 color_attrib; // attrib:3
 attribute vec2 uv_attrib; // attrib:4
 
 #ifdef USE_ATTRIB_MODULATE
 attribute highp vec4 modulate_attrib; // attrib:5
-#endif
+#endif // USE_ATTRIB_MODULATE
 
 // Usually, final_modulate is passed as a uniform. However during batching
 // If larger fvfs are used, final_modulate is passed as an attribute.
@@ -38,20 +38,20 @@ attribute highp vec4 modulate_attrib; // attrib:5
 // in shaders rather than final_modulate directly.
 #ifdef USE_ATTRIB_MODULATE
 #define final_modulate_alias modulate_attrib
-#else
+#else // USE_ATTRIB_MODULATE
 #define final_modulate_alias final_modulate
-#endif
+#endif // USE_ATTRIB_MODULATE
 
 #ifdef USE_ATTRIB_LARGE_VERTEX
 // shared with skeleton attributes, not used in batched shader
 attribute highp vec2 translate_attrib; // attrib:6
 attribute highp vec4 basis_attrib; // attrib:7
-#endif
+#endif // USE_ATTRIB_LARGE_VERTEX
 
 #ifdef USE_SKELETON
 attribute highp vec4 bone_indices; // attrib:6
 attribute highp vec4 bone_weights; // attrib:7
-#endif
+#endif // USE_SKELETON
 
 #ifdef USE_INSTANCING
 
@@ -62,16 +62,16 @@ attribute highp vec4 instance_color; //attrib:11
 
 #ifdef USE_INSTANCE_CUSTOM
 attribute highp vec4 instance_custom_data; //attrib:12
-#endif
+#endif // USE_INSTANCE_CUSTOM
 
-#endif
+#endif // USE_INSTANCING
 
 #ifdef USE_SKELETON
 uniform highp sampler2D skeleton_texture; // texunit:-3
 uniform highp ivec2 skeleton_texture_size;
 uniform highp mat4 skeleton_transform;
 uniform highp mat4 skeleton_transform_inverse;
-#endif
+#endif // USE_SKELETON
 
 varying vec2 uv_interp;
 varying vec4 color_interp;
@@ -79,11 +79,11 @@ varying vec4 color_interp;
 #ifdef USE_ATTRIB_MODULATE
 // modulate doesn't need interpolating but we need to send it to the fragment shader
 varying vec4 modulate_interp;
-#endif
+#endif // USE_ATTRIB_MODULATE
 
 #ifdef MODULATE_USED
 uniform vec4 final_modulate;
-#endif
+#endif // MODULATE_USED
 
 uniform highp vec2 color_texpixel_size;
 
@@ -92,7 +92,7 @@ uniform highp vec2 color_texpixel_size;
 uniform vec4 dst_rect;
 uniform vec4 src_rect;
 
-#endif
+#endif // USE_TEXTURE_RECT
 
 uniform highp float time;
 
@@ -118,12 +118,12 @@ varying vec4 local_rot;
 
 #ifdef USE_SHADOWS
 varying highp vec2 pos;
-#endif
+#endif // USE_SHADOWS
 
 const bool at_light_pass = true;
-#else
+#else // USE_LIGHTING
 const bool at_light_pass = false;
-#endif
+#endif // USE_LIGHTING
 
 /* clang-format off */
 
@@ -150,14 +150,14 @@ void main() {
 
 #ifdef USE_INSTANCE_CUSTOM
 	vec4 instance_custom = instance_custom_data;
-#else
+#else // USE_INSTANCE_CUSTOM
 	vec4 instance_custom = vec4(0.0);
-#endif
+#endif // USE_INSTANCE_CUSTOM
 
-#else
+#else // USE_INSTANCING
 	mat4 extra_matrix_instance = extra_matrix;
 	vec4 instance_custom = vec4(0.0);
-#endif
+#endif // USE_INSTANCING
 
 #ifdef USE_TEXTURE_RECT
 
@@ -178,11 +178,11 @@ void main() {
 	outvec.xy = dst_rect.xy + abs(dst_rect.zw) * select(vertex, vec2(1.0, 1.0) - vertex, lessThan(src_rect.zw, vec2(0.0, 0.0)));
 
 	// outvec.xy = dst_rect.xy + abs(dst_rect.zw) * vertex;
-#else
+#else // USE_TEXTURE_RECT
 	vec4 outvec = vec4(vertex.xy, 0.0, 1.0);
 
 	uv = uv_attrib;
-#endif
+#endif // USE_TEXTURE_RECT
 
 	float point_size = 1.0;
 
@@ -200,7 +200,7 @@ VERTEX_SHADER_CODE
 #ifdef USE_ATTRIB_MODULATE
 	// modulate doesn't need interpolating but we need to send it to the fragment shader
 	modulate_interp = modulate_attrib;
-#endif
+#endif // USE_ATTRIB_MODULATE
 
 #ifdef USE_ATTRIB_LARGE_VERTEX
 	// transform is in attributes
@@ -213,15 +213,15 @@ VERTEX_SHADER_CODE
 	temp += translate_attrib;
 	outvec.xy = temp;
 
-#else
+#else // USE_ATTRIB_LARGE_VERTEX
 
 	// transform is in uniforms
-#if !defined(SKIP_TRANSFORM_USED)
+#ifndef(SKIP_TRANSFORM_USED)
 	outvec = extra_matrix_instance * outvec;
 	outvec = modelview_matrix * outvec;
-#endif
+#endif // !SKIP_TRANSFORM_USED
 
-#endif // not large integer
+#endif // USE_ATTRIB_LARGE_VERTEX
 
 	color_interp = color;
 
@@ -230,7 +230,7 @@ VERTEX_SHADER_CODE
 	// precision issue on some hardware creates artifacts within texture
 	// offset uv by a small amount to avoid
 	uv += 1e-5;
-#endif
+#endif // USE_PIXEL_SNAP
 
 #ifdef USE_SKELETON
 
@@ -255,7 +255,7 @@ VERTEX_SHADER_CODE
 		outvec = bone_matrix * outvec;
 	}
 
-#endif
+#endif // USE_SKELETON
 
 	uv_interp = uv;
 	gl_Position = projection_matrix * outvec;
@@ -269,7 +269,7 @@ VERTEX_SHADER_CODE
 
 #ifdef USE_SHADOWS
 	pos = outvec.xy;
-#endif
+#endif // USE_SHADOWS
 
 #ifdef USE_ATTRIB_LIGHT_ANGLE
 	// we add a fixed offset because we are using the sign later,
@@ -291,53 +291,57 @@ VERTEX_SHADER_CODE
 	// in the light angle, and can use the same shader.
 	local_rot.xy = normalize((modelview_matrix * (extra_matrix_instance * vec4(vla.xy, 0.0, 0.0))).xy);
 	local_rot.zw = normalize((modelview_matrix * (extra_matrix_instance * vec4(vla.zw, 0.0, 0.0))).xy);
-#else
+#else // USE_ATTRIB_LIGHT_ANGLE
 	local_rot.xy = normalize((modelview_matrix * (extra_matrix_instance * vec4(1.0, 0.0, 0.0, 0.0))).xy);
 	local_rot.zw = normalize((modelview_matrix * (extra_matrix_instance * vec4(0.0, 1.0, 0.0, 0.0))).xy);
 #ifdef USE_TEXTURE_RECT
 	local_rot.xy *= sign(src_rect.z);
 	local_rot.zw *= sign(src_rect.w);
-#endif
-#endif // not using light angle
+#endif // USE_TEXTURE_RECT
+#endif // USE_ATTRIB_LIGHT_ANGLE
 
-#endif
+#endif // USE_LIGHTING
 }
 
 /* clang-format off */
 [fragment]
 
+#ifndef VITA_ENABLED
+
 // texture2DLodEXT and textureCubeLodEXT are fragment shader specific.
 // Do not copy these defines in the vertex section.
-#ifndef USE_GLES_OVER_GL
+#if !defined(USE_GLES_OVER_GL)
 #ifdef GL_EXT_shader_texture_lod
 #extension GL_EXT_shader_texture_lod : enable
 #define texture2DLod(img, coord, lod) texture2DLodEXT(img, coord, lod)
 #define textureCubeLod(img, coord, lod) textureCubeLodEXT(img, coord, lod)
-#endif
+#endif // GL_EXT_shader_texture_lod
 #endif // !USE_GLES_OVER_GL
 
-#ifdef GL_ARB_shader_texture_lod
+#if defined(GL_ARB_shader_texture_lod)
 #extension GL_ARB_shader_texture_lod : enable
-#endif
+#endif // GL_ARB_shader_texture_lod
 
 #if !defined(GL_EXT_shader_texture_lod) && !defined(GL_ARB_shader_texture_lod)
 #define texture2DLod(img, coord, lod) texture2D(img, coord, lod)
 #define textureCubeLod(img, coord, lod) textureCube(img, coord, lod)
-#endif
+#endif // !GL_EXT_shader_texture_lod && !GL_ARB_shader_texture_lod
+
+#endif !VITA_ENABLED
 
 #ifdef USE_GLES_OVER_GL
 #define lowp
 #define mediump
 #define highp
-#else
+#else // USE_GLES_OVER_GL
 #if defined(USE_HIGHP_PRECISION)
 precision highp float;
 precision highp int;
-#else
+#else // USE_HIGHP_PRECISION
 precision mediump float;
 precision mediump int;
-#endif
-#endif
+#endif // USE_HIGHP_PRECISION
+#endif // USE_GLES_OVER_GL
 
 #include "stdlib.glsl"
 
@@ -351,7 +355,7 @@ varying mediump vec4 color_interp;
 
 #ifdef USE_ATTRIB_MODULATE
 varying mediump vec4 modulate_interp;
-#endif
+#endif // USE_ATTRIB_MODULATE
 
 uniform highp float time;
 
@@ -361,13 +365,13 @@ uniform vec4 final_modulate;
 
 uniform sampler2D screen_texture; // texunit:-4
 
-#endif
+#endif // SCREEN_TEXTURE_USED
 
 #ifdef SCREEN_UV_USED
 
 uniform vec2 screen_pixel_size;
 
-#endif
+#endif // SCREEN_UV_USED
 
 #ifdef USE_LIGHTING
 
@@ -394,12 +398,12 @@ varying vec4 local_rot;
 uniform highp sampler2D shadow_texture; // texunit:-5
 varying highp vec2 pos;
 
-#endif
+#endif // USE_SHADOWS
 
 const bool at_light_pass = true;
-#else
+#else // USE_LIGHTING
 const bool at_light_pass = false;
-#endif
+#endif // USE_LIGHTING
 
 uniform bool use_default_normal;
 
@@ -421,7 +425,7 @@ void light_compute(
 		vec2 uv,
 #if defined(SCREEN_UV_USED)
 		vec2 screen_uv,
-#endif
+#endif // SCREEN_UV_USED
 		vec4 color) {
 
 #if defined(USE_LIGHT_SHADER_CODE)
@@ -432,7 +436,7 @@ LIGHT_SHADER_CODE
 
 	/* clang-format on */
 
-#endif
+#endif // USE_LIGHT_SHADER_CODE
 }
 
 void main() {
@@ -441,25 +445,25 @@ void main() {
 #ifdef USE_FORCE_REPEAT
 	//needs to use this to workaround GLES2/WebGL1 forcing tiling that textures that don't support it
 	uv = mod(uv, vec2(1.0, 1.0));
-#endif
+#endif // USE_FORCE_REPEAT
 
 #if !defined(COLOR_USED)
 	//default behavior, texture by color
 	color *= texture2D(color_texture, uv);
-#endif
+#endif // !COLOR_USED
 
 #ifdef SCREEN_UV_USED
 	vec2 screen_uv = gl_FragCoord.xy * screen_pixel_size;
-#endif
+#endif // SCREEN_UV_USED
 
 	vec3 normal;
 
 #if defined(NORMAL_USED)
 
 	bool normal_used = true;
-#else
+#else // NORMAL_USED
 	bool normal_used = false;
-#endif
+#endif // NORMAL_USED
 
 	if (use_default_normal) {
 		normal.xy = texture2D(normal_texture, uv).xy * 2.0 - 1.0;
@@ -475,19 +479,19 @@ void main() {
 #if defined(NORMALMAP_USED)
 		vec3 normal_map = vec3(0.0, 0.0, 1.0);
 		normal_used = true;
-#endif
+#endif // NORMALMAP_USED
 
 		// If larger fvfs are used, final_modulate is passed as an attribute.
 		// we need to read from this in custom fragment shaders or applying in the post step,
 		// rather than using final_modulate directly.
 #if defined(final_modulate_alias)
 #undef final_modulate_alias
-#endif
+#endif // final_modulate_alias
 #ifdef USE_ATTRIB_MODULATE
 #define final_modulate_alias modulate_interp
-#else
+#else // USE_ATTRIB_MODULATE
 #define final_modulate_alias final_modulate
-#endif
+#endif // USE_ATTRIB_MODULATE
 
 		/* clang-format off */
 
@@ -497,12 +501,12 @@ FRAGMENT_SHADER_CODE
 
 #if defined(NORMALMAP_USED)
 		normal = mix(vec3(0.0, 0.0, 1.0), normal_map * vec3(2.0, -2.0, 1.0) - vec3(1.0, -1.0, 0.0), normal_depth);
-#endif
+#endif // NORMALMAP_USED
 	}
 
 #if !defined(MODULATE_USED)
 	color *= final_modulate_alias;
-#endif
+#endif // !MODULATE_USED
 
 #ifdef USE_LIGHTING
 
@@ -526,7 +530,7 @@ FRAGMENT_SHADER_CODE
 		vec4 real_light_color = light_color;
 		vec4 real_light_shadow_color = light_shadow_color;
 
-#if defined(USE_LIGHT_SHADER_CODE)
+#ifdef USE_LIGHT_SHADER_CODE
 		//light is written by the light shader
 		light_compute(
 				light,
@@ -540,9 +544,9 @@ FRAGMENT_SHADER_CODE
 				uv,
 #if defined(SCREEN_UV_USED)
 				screen_uv,
-#endif
+#endif // SCREEN_UV_USED
 				color);
-#endif
+#endif // USE_LIGHT_SHADER_CODE
 
 		light *= real_light_color;
 
@@ -561,9 +565,9 @@ FRAGMENT_SHADER_CODE
 		inverse_light_matrix[1] = normalize(inverse_light_matrix[1]);
 		inverse_light_matrix[2] = normalize(inverse_light_matrix[2]);
 		shadow_vec = (inverse_light_matrix * vec3(shadow_vec, 0.0)).xy;
-#else
+#else // SHADOW_VEC_USED
 		shadow_vec = light_uv_interp.zw;
-#endif
+#endif // SHADOW_VEC_USED
 
 		float angle_to_light = -atan(shadow_vec.x, shadow_vec.y);
 		float PI = 3.14159265358979323846264;
@@ -600,11 +604,11 @@ FRAGMENT_SHADER_CODE
 #ifdef USE_RGBA_SHADOWS
 #define SHADOW_DEPTH(m_tex, m_uv) dot(texture2D((m_tex), (m_uv)), vec4(1.0 / (255.0 * 255.0 * 255.0), 1.0 / (255.0 * 255.0), 1.0 / 255.0, 1.0))
 
-#else
+#else // USE_RGBA_SHADOWS
 
 #define SHADOW_DEPTH(m_tex, m_uv) (texture2D((m_tex), (m_uv)).r)
 
-#endif
+#endif // USE_RGBA_SHADOWS
 
 #ifdef SHADOW_USE_GRADIENT
 
@@ -612,18 +616,18 @@ FRAGMENT_SHADER_CODE
 		/* GLSL es 100 doesn't support line continuation characters(backslashes) */
 #define SHADOW_TEST(m_ofs) { highp float sd = SHADOW_DEPTH(shadow_texture, vec2(m_ofs, sh)); shadow_attenuation += 1.0 - smoothstep(sd, sd + shadow_gradient, sz); }
 
-#else
+#else // SHADOW_USE_GRADIENT
 
 #define SHADOW_TEST(m_ofs) { highp float sd = SHADOW_DEPTH(shadow_texture, vec2(m_ofs, sh)); shadow_attenuation += step(sz, sd); }
 		/* clang-format on */
 
-#endif
+#endif // SHADOW_USE_GRADIENT
 
 #ifdef SHADOW_FILTER_NEAREST
 
 		SHADOW_TEST(su);
 
-#endif
+#endif // SHADOW_FILTER_NEAREST
 
 #ifdef SHADOW_FILTER_PCF3
 
@@ -632,7 +636,7 @@ FRAGMENT_SHADER_CODE
 		SHADOW_TEST(su - shadowpixel_size);
 		shadow_attenuation /= 3.0;
 
-#endif
+#endif //SHADOW_FILTER_PCF3
 
 #ifdef SHADOW_FILTER_PCF5
 
@@ -643,7 +647,7 @@ FRAGMENT_SHADER_CODE
 		SHADOW_TEST(su - shadowpixel_size * 2.0);
 		shadow_attenuation /= 5.0;
 
-#endif
+#endif // SHADOW_FILTER_PCF5
 
 #ifdef SHADOW_FILTER_PCF7
 
@@ -656,7 +660,7 @@ FRAGMENT_SHADER_CODE
 		SHADOW_TEST(su - shadowpixel_size * 3.0);
 		shadow_attenuation /= 7.0;
 
-#endif
+#endif // SHADOW_FILTER_PCF7
 
 #ifdef SHADOW_FILTER_PCF9
 
@@ -671,7 +675,7 @@ FRAGMENT_SHADER_CODE
 		SHADOW_TEST(su - shadowpixel_size * 4.0);
 		shadow_attenuation /= 9.0;
 
-#endif
+#endif // SHADOW_FILTER_PCF9
 
 #ifdef SHADOW_FILTER_PCF13
 
@@ -690,22 +694,20 @@ FRAGMENT_SHADER_CODE
 		SHADOW_TEST(su - shadowpixel_size * 6.0);
 		shadow_attenuation /= 13.0;
 
-#endif
+#endif // SHADOW_FILTER_PCF13
 
 		//color *= shadow_attenuation;
 		color = mix(real_light_shadow_color, color, shadow_attenuation);
-//use shadows
-#endif
+#endif // USE_SHADOWS
 	}
 
-//use lighting
-#endif
+#endif // USE_LIGHTING
 
 #ifdef LINEAR_TO_SRGB
 	// regular Linear -> SRGB conversion
 	vec3 a = vec3(0.055);
 	color.rgb = mix((vec3(1.0) + a) * pow(color.rgb, vec3(1.0 / 2.4)) - a, 12.92 * color.rgb, vec3(lessThan(color.rgb, vec3(0.0031308))));
-#endif
+#endif // LINEAR_TO_SRGB
 
 	gl_FragColor = color;
 }

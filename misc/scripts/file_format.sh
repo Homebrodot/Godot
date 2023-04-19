@@ -7,6 +7,7 @@
 # We need dos2unix and recode.
 if [ ! -x "$(command -v dos2unix)" -o ! -x "$(command -v isutf8)" ]; then
     printf "Install 'dos2unix' and 'isutf8' (from the moreutils package) to use this script.\n"
+    exit 255
 fi
 
 set -uo pipefail

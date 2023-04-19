@@ -11,9 +11,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
-#if defined (__NetBSD__)
+#ifdef __NetBSD__
 #include <net/if.h>
-#endif
+#endif // __NetBSD__
 #if defined(_WIN32) || defined(__amigaos__) || defined(__amigaos4__)
 #ifdef _WIN32
 #include <winsock2.h>
@@ -52,19 +52,27 @@ struct sockaddr_un {
   uint16_t sun_family;
   char     sun_path[UNIX_PATH_LEN];
 };
-#else /* defined(_WIN32) || defined(__amigaos__) || defined(__amigaos4__) */
+#else // _WIN32 || __amigaos__ || __amigaos4__
 #include <strings.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/param.h>
 #include <sys/time.h>
+#ifndef __SWITCH__
 #include <sys/un.h>
+#else // !__SWITCH__
+#define UNIX_PATH_LEN   108
+struct sockaddr_un {
+  uint16_t sun_family;
+  char     sun_path[UNIX_PATH_LEN];
+};
+#endif // !__SWITCH__
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <net/if.h>
 #define closesocket close
-#endif
+#endif // _WIN32 || __amigaos__ || __amigaos4__
 
 #include "miniupnpc_socketdef.h"
 

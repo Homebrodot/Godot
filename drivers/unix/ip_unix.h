@@ -30,10 +30,9 @@
 
 #ifndef IP_UNIX_H
 #define IP_UNIX_H
+#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HORIZON_ENABLED) || defined(VITA_ENABLED)
 
 #include "core/io/ip.h"
-
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED)
 
 class IP_Unix : public IP {
 	GDCLASS(IP_Unix, IP);
@@ -49,6 +48,5 @@ public:
 	IP_Unix();
 };
 
-#endif
-
+#endif // UNIX_ENABLED || WINDOWS_ENABLED || HORIZON_ENABLED || VITA_ENABLED
 #endif // IP_UNIX_H

@@ -1,0 +1,78 @@
+name: 🌱 PSVita Builds
+on:
+  push:
+    paths-ignore:
+      - ".github/workflows/**"
+      - "platform/**"
+      - "!.github/workflows/vita_builds.yml"
+      - "drivers/gles3/**"
+      - "!platform/register_platform_apis.h"
+      - "!platform/SCsub"
+      - "!platform/server/**"
+      - "!platform/vita/**"
+  pull_request:
+    paths-ignore:
+      - ".github/workflows/**"
+      - "platform/**"
+      - "!.github/workflows/vita_builds.yml"
+      - "!platform/register_platform_apis.h"
+      - "!platform/SCsub"
+      - "!platform/server/**"
+      - "!platform/vita/**"
+
+# Global Settings
+env:
+  GODOT_BASE_BRANCH: 3.5
+  SCONSFLAGS: verbose=yes warnings=all werror=no debug_symbols=no
+  VITASDK: /usr/local/vitasdk
+  EUID: 1 makepkg
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-vita
+  cancel-in-progress: true
+
+jobs:
+  vita-template:
+    runs-on: ubuntu-20.04
+    name: Template (target=release, tools=no)
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Godot build cache
+        uses: ./.github/actions/godot-cache
+        continue-on-error: true
+
+      - name: Setup python and scons
+        uses: ./.github/actions/godot-deps
+
+      - name: Linux dependencies
+        run: |
+          # Azure repositories are not reliable, we need to prevent azure giving us packages.
+          sudo rm -f /etc/apt/sources.list.d/*
+          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+          sudo apt-get update
+          sudo apt-get install cmake libarchive-tools fakeroot zip -y
+
+      - name: Setup VitaSDK
+        run: |
+          git clone https://github.com/vitasdk/vdpm
+          git clone https://github.com/isage/vita-packages-extra
+          cd vdpm
+          ./bootstrap-vitasdk.sh
+          ./install-all.sh
+          export PATH=$VITASDK/bin:$PATH
+          cd ../vita-packages-extra/pvr_psp2
+          vita-makepkg
+          vdpm *-arm.tar.xz
+
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }}
+          platform: vita
+          target: release
+          tools: false
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact

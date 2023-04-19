@@ -43,11 +43,16 @@
 
 #ifndef ANDROID_ENABLED
 #include <sys/statvfs.h>
-#endif
+#endif // ANDROID_ENABLED
+
+#ifdef VITA_ENABLED
+#include <psp2/appmgr.h>
+#include <psp2/io/stat.h>
+#endif // VITA_ENABLED
 
 #ifdef HAVE_MNTENT
 #include <mntent.h>
-#endif
+#endif // HAVE_MNTENT
 
 Error DirAccessUnix::list_dir_begin() {
 	list_dir_end(); //close any previous dir opening!
@@ -130,11 +135,15 @@ String DirAccessUnix::get_next() {
 
 	String fname = fix_unicode_name(entry->d_name);
 
-	// Look at d_type to determine if the entry is a directory, unless
-	// its type is unknown (the file system does not support it) or if
-	// the type is a link, in that case we want to resolve the link to
-	// known if it points to a directory. stat() will resolve the link
-	// for us.
+// Look at d_type to determine if the entry is a directory, unless
+// its type is unknown (the file system does not support it) or if
+// the type is a link, in that case we want to resolve the link to
+// known if it points to a directory. stat() will resolve the link
+// for us.
+#ifdef VITA_ENABLED
+#define SCE_SO_ISDIR(m) (((m)&SCE_SO_IFMT) == SCE_SO_IFDIR)
+	_cisdir = SCE_SO_ISDIR(entry->d_stat.st_attr);
+#else // VITA_ENABLED
 	if (entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK) {
 		String f = current_dir.plus_file(fname);
 
@@ -147,6 +156,7 @@ String DirAccessUnix::get_next() {
 	} else {
 		_cisdir = (entry->d_type == DT_DIR);
 	}
+#endif // VITA_ENABLED
 
 	_cishidden = is_hidden(fname);
 
@@ -187,7 +197,7 @@ static bool _filter_drive(struct mntent *mnt) {
 	// Ignore everything else
 	return false;
 }
-#endif
+#endif // HAVE_MNTENT && X11_ENABLED
 
 static void _get_drives(List<String> *list) {
 	list->push_back("/");
@@ -210,7 +220,7 @@ static void _get_drives(List<String> *list) {
 
 		endmntent(mtab);
 	}
-#endif
+#endif // HAVE_MNTENT && X11_ENABLED
 
 	// Add $HOME
 	const char *home = getenv("HOME");
@@ -395,6 +405,9 @@ Error DirAccessUnix::remove(String p_path) {
 }
 
 bool DirAccessUnix::is_link(String p_file) {
+#ifdef VITA_ENABLED
+	return false;
+#else // VITA_ENABLED
 	if (p_file.is_rel_path())
 		p_file = get_current_dir().plus_file(p_file);
 
@@ -405,14 +418,19 @@ bool DirAccessUnix::is_link(String p_file) {
 		return FAILED;
 
 	return S_ISLNK(flags.st_mode);
+#endif // VITA_ENABLED
 }
 
 String DirAccessUnix::read_link(String p_file) {
+#if defined(VITA_ENABLED) || defined(HORIZON_ENABLED)
+	return p_file;
+#else // VITA_ENABLED || HORIZON_ENABLED
 	if (p_file.is_rel_path())
 		p_file = get_current_dir().plus_file(p_file);
 
 	p_file = fix_path(p_file);
 
+	return p_file;
 	char buf[256];
 	memset(buf, 0, 256);
 	ssize_t len = readlink(p_file.utf8().get_data(), buf, sizeof(buf));
@@ -421,9 +439,13 @@ String DirAccessUnix::read_link(String p_file) {
 		link.parse_utf8(buf, len);
 	}
 	return link;
+#endif // VITA_ENABLED || HORIZON_ENABLED
 }
 
 Error DirAccessUnix::create_link(String p_source, String p_target) {
+#if defined(VITA_ENABLED) || defined(HORIZON_ENABLED)
+	return FAILED;
+#else // VITA_ENABLED || HORIZON_ENABLED
 	if (p_target.is_rel_path())
 		p_target = get_current_dir().plus_file(p_target);
 
@@ -435,6 +457,7 @@ Error DirAccessUnix::create_link(String p_source, String p_target) {
 	} else {
 		return FAILED;
 	}
+#endif // VITA_ENABLED || HORIZON_ENABLED
 }
 
 uint64_t DirAccessUnix::get_space_left() {
@@ -445,10 +468,10 @@ uint64_t DirAccessUnix::get_space_left() {
 	};
 
 	return (uint64_t)vfs.f_bavail * (uint64_t)vfs.f_frsize;
-#else
+#else // NO_STATVFS
 	// FIXME: Implement this.
 	return 0;
-#endif
+#endif // NO_STATVFS
 };
 
 String DirAccessUnix::get_filesystem_type() const {

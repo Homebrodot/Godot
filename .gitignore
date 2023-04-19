@@ -86,6 +86,13 @@ platform/android/java/*/libs/
 *.bc
 platform/javascript/node_modules/
 
+# Vita
+*.vpk
+
+# Switch
+*.nacp
+*.nro
+
 # Misc
 *.debug
 

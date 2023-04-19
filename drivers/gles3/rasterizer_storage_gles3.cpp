@@ -41,11 +41,11 @@
 
 #if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
 #include <dlfcn.h>
-#endif
+#endif // IPHONE_ENABLED || ANDROID_ENABLED
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_settings.h"
-#endif
+#endif // TOOLS_ENABLED
 
 /* TEXTURE API */
 
@@ -118,7 +118,7 @@
 
 #ifndef GLES_OVER_GL
 #define glClearDepth glClearDepthf
-#endif
+#endif // GLES_OVER_GL
 
 void glTexStorage2DCustom(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type) {
 #ifdef GLES_OVER_GL
@@ -129,9 +129,9 @@ void glTexStorage2DCustom(GLenum target, GLsizei levels, GLenum internalformat, 
 		height = MAX(1, (height / 2));
 	}
 
-#else
+#else // GLES_OVER_GL
 	glTexStorage2D(target, levels, internalformat, width, height);
-#endif
+#endif // GLES_OVER_GL
 }
 
 GLuint RasterizerStorageGLES3::system_fbo = 0;
@@ -151,22 +151,22 @@ Ref<Image> RasterizerStorageGLES3::_get_gl_image_and_format(const Ref<Image> &p_
 			r_gl_internal_format = GL_R8;
 			r_gl_format = GL_RED;
 			r_gl_type = GL_UNSIGNED_BYTE;
-#else
+#else // GLES_OVER_GL
 			r_gl_internal_format = GL_LUMINANCE;
 			r_gl_format = GL_LUMINANCE;
 			r_gl_type = GL_UNSIGNED_BYTE;
-#endif
+#endif // GLES_OVER_GL
 		} break;
 		case Image::FORMAT_LA8: {
 #ifdef GLES_OVER_GL
 			r_gl_internal_format = GL_RG8;
 			r_gl_format = GL_RG;
 			r_gl_type = GL_UNSIGNED_BYTE;
-#else
+#else // GLES_OVER_GL
 			r_gl_internal_format = GL_LUMINANCE_ALPHA;
 			r_gl_format = GL_LUMINANCE_ALPHA;
 			r_gl_type = GL_UNSIGNED_BYTE;
-#endif
+#endif // GLES_OVER_GL
 		} break;
 		case Image::FORMAT_R8: {
 			r_gl_internal_format = GL_R8;
@@ -573,7 +573,7 @@ void RasterizerStorageGLES3::texture_allocate(RID p_texture, int p_width, int p_
 		default: {
 		}
 	}
-#endif
+#endif // !GLES_OVER_GL
 
 	Texture *texture = texture_owner.get(p_texture);
 	ERR_FAIL_COND(!texture);
@@ -594,9 +594,9 @@ void RasterizerStorageGLES3::texture_allocate(RID p_texture, int p_width, int p_
 		case VS::TEXTURE_TYPE_EXTERNAL: {
 #ifdef ANDROID_ENABLED
 			texture->target = _GL_TEXTURE_EXTERNAL_OES;
-#else
+#else // ANDROID_ENABLED
 			texture->target = GL_TEXTURE_2D;
-#endif
+#endif // ANDROID_ENABLED
 			texture->images.resize(0);
 		} break;
 		case VS::TEXTURE_TYPE_CUBEMAP: {
@@ -831,7 +831,7 @@ void RasterizerStorageGLES3::texture_set_data(RID p_texture, const Ref<Image> &p
 
 		} break;
 	}
-#endif
+#endif // GLES_OVER_GL
 	if (config.use_anisotropic_filter) {
 		if (texture->flags & VS::TEXTURE_FLAG_ANISOTROPIC_FILTER) {
 			glTexParameterf(texture->target, _GL_TEXTURE_MAX_ANISOTROPY_EXT, config.anisotropic_level);
@@ -1208,7 +1208,7 @@ Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) 
 	Image *img = memnew(Image(texture->alloc_width, texture->alloc_height, texture->mipmaps > 1, img_format, data));
 
 	return Ref<Image>(img);
-#else
+#else // GLES_OVER_GL
 
 	Image::Format real_format;
 	GLenum gl_format;
@@ -1279,7 +1279,7 @@ Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) 
 	}
 
 	return Ref<Image>(img);
-#endif
+#endif // GLES_OVER_GL
 }
 
 void RasterizerStorageGLES3::texture_set_flags(RID p_texture, uint32_t p_flags) {
@@ -1520,7 +1520,7 @@ RID RasterizerStorageGLES3::texture_create_radiance_cubemap(RID p_source, int p_
 			texture->flags |= VS::TEXTURE_FLAG_CONVERT_TO_LINEAR;
 			//notify that texture must be set to linear beforehand, so it works in other platforms when exported
 		}
-#endif
+#endif // TOOLS_ENABLED
 	}
 
 	glActiveTexture(GL_TEXTURE1);
@@ -1585,7 +1585,7 @@ RID RasterizerStorageGLES3::texture_create_radiance_cubemap(RID p_source, int p_
 #ifdef DEBUG_ENABLED
 			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			ERR_CONTINUE(status != GL_FRAMEBUFFER_COMPLETE);
-#endif
+#endif // DEBUG_ENABLED
 		}
 
 		if (size > 1) {
@@ -1713,17 +1713,17 @@ void RasterizerStorageGLES3::sky_set_texture(RID p_sky, RID p_panorama, int p_ra
 #ifdef GLES_OVER_GL
 	glTexParameteri(texture->target, GL_TEXTURE_MAX_LEVEL, int(Math::floor(Math::log(float(texture->width)) / Math::log(2.0f))));
 	glGenerateMipmap(texture->target);
-#else
+#else // GLES_OVER_GL
 	glTexParameteri(texture->target, GL_TEXTURE_MAX_LEVEL, 0);
-#endif
+#endif // GLES_OVER_GL
 	// Need Mipmaps regardless of whether they are set in import by user
 	glTexParameterf(texture->target, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameterf(texture->target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 #ifdef GLES_OVER_GL
 	glTexParameterf(texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-#else
+#else // GLES_OVER_GL
 	glTexParameterf(texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-#endif
+#endif // GLES_OVER_GL
 	glTexParameterf(texture->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	if (config.srgb_decode_supported && texture->srgb && !texture->using_srgb) {
@@ -1734,7 +1734,7 @@ void RasterizerStorageGLES3::sky_set_texture(RID p_sky, RID p_panorama, int p_ra
 			texture->flags |= VS::TEXTURE_FLAG_CONVERT_TO_LINEAR;
 			//notify that texture must be set to linear beforehand, so it works in other platforms when exported
 		}
-#endif
+#endif // TOOLS_ENABLED
 	}
 
 	{
@@ -1786,7 +1786,7 @@ void RasterizerStorageGLES3::sky_set_texture(RID p_sky, RID p_panorama, int p_ra
 #ifdef DEBUG_ENABLED
 			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			ERR_FAIL_COND(status != GL_FRAMEBUFFER_COMPLETE);
-#endif
+#endif // DEBUG_ENABLED
 		}
 
 		shaders.cubemap_filter.set_conditional(CubemapFilterShaderGLES3::USE_DUAL_PARABOLOID, true);
@@ -1880,7 +1880,7 @@ void RasterizerStorageGLES3::sky_set_texture(RID p_sky, RID p_panorama, int p_ra
 #ifdef DEBUG_ENABLED
 			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			ERR_FAIL_COND(status != GL_FRAMEBUFFER_COMPLETE);
-#endif
+#endif // DEBUG_ENABLED
 		}
 
 		for (int j = 0; j < array_level; j++) {
@@ -1888,9 +1888,9 @@ void RasterizerStorageGLES3::sky_set_texture(RID p_sky, RID p_panorama, int p_ra
 
 #ifdef GLES_OVER_GL
 			if (j < 3) {
-#else
+#else // GLES_OVER_GL
 			if (j == 0) {
-#endif
+#endif // GLES_OVER_GL
 
 				shaders.cubemap_filter.set_conditional(CubemapFilterShaderGLES3::USE_DUAL_PARABOLOID, true);
 				shaders.cubemap_filter.set_conditional(CubemapFilterShaderGLES3::USE_SOURCE_PANORAMA, true);
@@ -1997,7 +1997,7 @@ void RasterizerStorageGLES3::sky_set_texture(RID p_sky, RID p_panorama, int p_ra
 #ifdef DEBUG_ENABLED
 			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			ERR_FAIL_COND(status != GL_FRAMEBUFFER_COMPLETE);
-#endif
+#endif // DEBUG_ENABLED
 		}
 
 		lod = 0;
@@ -2012,16 +2012,16 @@ void RasterizerStorageGLES3::sky_set_texture(RID p_sky, RID p_panorama, int p_ra
 #ifdef DEBUG_ENABLED
 			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			ERR_CONTINUE(status != GL_FRAMEBUFFER_COMPLETE);
-#endif
+#endif // DEBUG_ENABLED
 			glBindTexture(GL_TEXTURE_2D, tmp_tex);
 			glTexImage2D(GL_TEXTURE_2D, 0, internal_format, size, size * 2, 0, format, type, nullptr);
 			glBindFramebuffer(GL_FRAMEBUFFER, tmp_fb2);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp_tex, 0);
 #ifdef GLES_OVER_GL
 			if (lod < 3) {
-#else
+#else // GLES_OVER_GL
 			if (lod == 0) {
-#endif
+#endif // GLES_OVER_GL
 
 				shaders.cubemap_filter.set_conditional(CubemapFilterShaderGLES3::USE_DUAL_PARABOLOID, true);
 				shaders.cubemap_filter.set_conditional(CubemapFilterShaderGLES3::USE_SOURCE_PANORAMA, true);
@@ -3791,7 +3791,7 @@ void RasterizerStorageGLES3::mesh_add_surface(RID p_mesh, uint32_t p_format, VS:
 			}
 		}
 
-#endif
+#endif // DEBUG_ENABLED
 	}
 
 	{
@@ -3956,7 +3956,7 @@ PoolVector<uint8_t> RasterizerStorageGLES3::mesh_surface_get_array(RID p_mesh, i
 		PoolVector<uint8_t>::Write w = ret.write();
 		glGetBufferSubData(GL_ARRAY_BUFFER, 0, surface->array_byte_size, w.ptr());
 	}
-#else
+#else // GLES_OVER_GL || __EMSCRIPTEN__
 	void *data = glMapBufferRange(GL_ARRAY_BUFFER, 0, surface->array_byte_size, GL_MAP_READ_BIT);
 	ERR_FAIL_NULL_V(data, PoolVector<uint8_t>());
 	{
@@ -3964,7 +3964,7 @@ PoolVector<uint8_t> RasterizerStorageGLES3::mesh_surface_get_array(RID p_mesh, i
 		memcpy(w.ptr(), data, surface->array_byte_size);
 	}
 	glUnmapBuffer(GL_ARRAY_BUFFER);
-#endif
+#endif // GLES_OVER_GL || __EMSCRIPTEN__
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	return ret;
@@ -3996,7 +3996,7 @@ PoolVector<uint8_t> RasterizerStorageGLES3::mesh_surface_get_index_array(RID p_m
 			memcpy(w.ptr(), data, surface->index_array_byte_size);
 		}
 		glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-#endif
+#endif // GLES_OVER_GL || __EMSCRIPTEN__
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
@@ -4053,7 +4053,7 @@ Vector<PoolVector<uint8_t>> RasterizerStorageGLES3::mesh_surface_get_blend_shape
 			memcpy(w.ptr(), data, mesh->surfaces[p_surface]->array_byte_size);
 		}
 		glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-#endif
+#endif // GLES_OVER_GL || __EMSCRIPTEN__
 
 		bsarr.push_back(ret);
 	}
@@ -6382,9 +6382,9 @@ AABB RasterizerStorageGLES3::particles_get_current_aabb(RID p_particles) {
 	}
 	PoolVector<uint8_t>::Read r = vector.read();
 	data = reinterpret_cast<const float *>(r.ptr());
-#else
+#else // GLES_OVER_GL || __EMSCRIPTEN__
 	data = (float *)glMapBufferRange(GL_ARRAY_BUFFER, 0, particles->amount * 16 * 6, GL_MAP_READ_BIT);
-#endif
+#endif // GLES_OVER_GL || __EMSCRIPTEN__
 	AABB aabb;
 
 	Transform inv = particles->emission_transform.affine_inverse();
@@ -6405,9 +6405,9 @@ AABB RasterizerStorageGLES3::particles_get_current_aabb(RID p_particles) {
 #if defined(GLES_OVER_GL) || defined(__EMSCRIPTEN__)
 	r.release();
 	vector = PoolVector<uint8_t>();
-#else
+#else // GLES_OVER_GL || __EMSCRIPTEN__
 	glUnmapBuffer(GL_ARRAY_BUFFER);
-#endif
+#endif // GLES_OVER_GL || __EMSCRIPTEN__
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -8075,7 +8075,7 @@ void RasterizerStorageGLES3::initialize() {
 	config.texture_float_linear_supported = true;
 	config.framebuffer_float_supported = true;
 	config.framebuffer_half_float_supported = true;
-#else
+#else // GLES_OVER_GL
 	config.etc2_supported = true;
 	config.s3tc_supported = config.extensions.has("GL_EXT_texture_compression_dxt1") || config.extensions.has("GL_EXT_texture_compression_s3tc") || config.extensions.has("WEBGL_compressed_texture_s3tc");
 	config.rgtc_supported = config.extensions.has("GL_EXT_texture_compression_rgtc") || config.extensions.has("GL_ARB_texture_compression_rgtc") || config.extensions.has("EXT_texture_compression_rgtc");
@@ -8086,11 +8086,10 @@ void RasterizerStorageGLES3::initialize() {
 	// If the desktop build is using S3TC, and you export / run from the IDE for android, if the device supports
 	// S3TC it will crash trying to load these textures, as they are not exported in the APK. This is a simple way
 	// to prevent Android devices trying to load S3TC, by faking lack of hardware support.
-#if defined(ANDROID_ENABLED) || defined(IPHONE_ENABLED)
+#if defined(ANDROID_ENABLED) || defined(IPHONE_ENABLED) || defined(HORIZON_ENABLED)
 	config.s3tc_supported = false;
-#endif
-#endif
-
+#endif // ANDROID_ENABLED || IPHONE_ENABLED || HORIZON_ENABLED
+#endif // GLES_OVER_GL
 	// not yet detected on GLES3 (is this mandated?)
 	config.support_npot_repeat_mipmap = true;
 
@@ -8107,14 +8106,14 @@ void RasterizerStorageGLES3::initialize() {
 #ifdef GLES_OVER_GL
 	config.program_binary_supported = GLAD_GL_ARB_get_program_binary;
 	config.parallel_shader_compile_supported = GLAD_GL_ARB_parallel_shader_compile || GLAD_GL_KHR_parallel_shader_compile;
-#else
+#else // GLES_OVER_GL
 #ifdef JAVASCRIPT_ENABLED
 	config.program_binary_supported = false;
-#else
+#else // JAVASCRIPT_ENABLED
 	config.program_binary_supported = true;
-#endif
+#endif // JAVASCRIPT_ENABLED
 	config.parallel_shader_compile_supported = config.extensions.has("GL_KHR_parallel_shader_compile") || config.extensions.has("GL_ARB_parallel_shader_compile");
-#endif
+#endif // GLES_OVER_GL
 
 	int compilation_mode = 0;
 	if (!(Engine::get_singleton()->is_editor_hint() || Main::is_project_manager())) {
@@ -8131,7 +8130,7 @@ void RasterizerStorageGLES3::initialize() {
 		} else if (GLAD_GL_KHR_parallel_shader_compile) {
 			glMaxShaderCompilerThreadsKHR(ShaderGLES3::max_simultaneous_compiles);
 		}
-#else
+#else // GLES_OVER_GL
 #if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED) // TODO: Consider more platforms?
 		void *gles3_lib = nullptr;
 		void (*MaxShaderCompilerThreads)(GLuint) = nullptr;
@@ -8139,7 +8138,7 @@ void RasterizerStorageGLES3::initialize() {
 		gles3_lib = dlopen(nullptr, RTLD_LAZY);
 #elif defined(ANDROID_ENABLED)
 		gles3_lib = dlopen("libGLESv3.so", RTLD_LAZY);
-#endif
+#endif // IPHONE_ENABLED
 		if (gles3_lib) {
 			MaxShaderCompilerThreads = (void (*)(GLuint))dlsym(gles3_lib, "glMaxShaderCompilerThreadsARB");
 			if (!MaxShaderCompilerThreads) {
@@ -8151,16 +8150,16 @@ void RasterizerStorageGLES3::initialize() {
 		} else {
 #ifdef DEBUG_ENABLED
 			print_line("Async. shader compilation: No MaxShaderCompilerThreads function found.");
-#endif
+#endif // DEBUG_ENABLED
 		}
-#endif
-#endif
+#endif // IPHONE_ENABLED || ANDROID_ENABLED
+#endif // GLES_OVER_GL
 	} else {
 		ShaderGLES3::max_simultaneous_compiles = 0;
 	}
 #ifdef DEBUG_ENABLED
 	ShaderGLES3::log_active_async_compiles_count = (bool)ProjectSettings::get_singleton()->get("rendering/gles3/shaders/log_active_async_compiles_count");
-#endif
+#endif // DEBUG_ENABLED
 
 	frame.clear_request = false;
 
@@ -8361,7 +8360,7 @@ void RasterizerStorageGLES3::initialize() {
 
 #ifdef GLES_OVER_GL
 	glEnable(_EXT_TEXTURE_CUBE_MAP_SEAMLESS);
-#endif
+#endif // GLES_OVER_GL
 
 	frame.count = 0;
 	frame.delta = 0;

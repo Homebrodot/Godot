@@ -73,9 +73,9 @@ GLuint RasterizerStorageGLES2::system_fbo = 0;
 
 #ifdef GLES_OVER_GL
 #define _GL_HALF_FLOAT_OES 0x140B
-#else
+#else // GLES_OVER_GL
 #define _GL_HALF_FLOAT_OES 0x8D61
-#endif
+#endif // GLES_OVER_GL
 
 #define _EXT_TEXTURE_CUBE_MAP_SEAMLESS 0x884F
 
@@ -89,10 +89,12 @@ GLuint RasterizerStorageGLES2::system_fbo = 0;
 #ifndef GLES_OVER_GL
 #define glClearDepth glClearDepthf
 
+#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
 // enable extensions manually for android and ios
 #ifndef UWP_ENABLED
 #include <dlfcn.h> // needed to load extensions
-#endif
+#endif // !UWP_ENABLED
+#endif // IPHONE_ENABLED || ANDROID_ENABLED
 
 #ifdef IPHONE_ENABLED
 
@@ -100,7 +102,7 @@ GLuint RasterizerStorageGLES2::system_fbo = 0;
 //void *glRenderbufferStorageMultisampleAPPLE;
 //void *glResolveMultisampleFramebufferAPPLE;
 #define glRenderbufferStorageMultisample glRenderbufferStorageMultisampleAPPLE
-#elif defined(ANDROID_ENABLED)
+#elif defined(ANDROID_ENABLED) || defined(HORIZON_ENABLED)
 
 #include <GLES2/gl2ext.h>
 PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC glRenderbufferStorageMultisampleEXT;
@@ -112,7 +114,12 @@ PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC glFramebufferTexture2DMultisampleEXT
 #include <GLES2/gl2ext.h>
 #define glRenderbufferStorageMultisample glRenderbufferStorageMultisampleANGLE
 #define glFramebufferTexture2DMultisample glFramebufferTexture2DMultisampleANGLE
-#endif
+
+#elif defined(VITA_ENABLED)
+#include <GLES2/gl2ext.h>
+#define glRenderbufferStorageMultisample glRenderbufferStorageMultisampleIMG
+#define glFramebufferTexture2DMultisample glFramebufferTexture2DMultisampleIMG
+#endif // IPHONE_ENABLED
 
 #define GL_TEXTURE_3D 0x806F
 #define GL_MAX_SAMPLES 0x8D57
@@ -362,7 +369,6 @@ Ref<Image> RasterizerStorageGLES2::_get_gl_image_and_format(const Ref<Image> &p_
 				r_gl_format = GL_RGBA;
 				r_gl_type = GL_UNSIGNED_BYTE;
 				r_compressed = true;
-
 			} else {
 				need_decompress = true;
 			}
@@ -373,7 +379,6 @@ Ref<Image> RasterizerStorageGLES2::_get_gl_image_and_format(const Ref<Image> &p_
 				r_gl_format = GL_RGBA;
 				r_gl_type = GL_UNSIGNED_BYTE;
 				r_compressed = true;
-
 			} else {
 				need_decompress = true;
 			}
@@ -385,7 +390,6 @@ Ref<Image> RasterizerStorageGLES2::_get_gl_image_and_format(const Ref<Image> &p_
 				r_gl_format = GL_RGBA;
 				r_gl_type = GL_UNSIGNED_BYTE;
 				r_compressed = true;
-
 			} else {
 				need_decompress = true;
 			}
@@ -397,7 +401,6 @@ Ref<Image> RasterizerStorageGLES2::_get_gl_image_and_format(const Ref<Image> &p_
 				r_gl_format = GL_RGBA;
 				r_gl_type = GL_UNSIGNED_BYTE;
 				r_compressed = true;
-
 			} else {
 				need_decompress = true;
 			}
@@ -531,11 +534,11 @@ void RasterizerStorageGLES2::texture_allocate(RID p_texture, int p_width, int p_
 			texture->images.resize(1);
 		} break;
 		case VS::TEXTURE_TYPE_EXTERNAL: {
-#ifdef ANDROID_ENABLED
+#if defined(ANDROID_ENABLED) || defined(VITA_ENABLED)
 			texture->target = _GL_TEXTURE_EXTERNAL_OES;
-#else
+#else // ANDROID_ENABLED || VITA_ENABLED
 			texture->target = GL_TEXTURE_2D;
-#endif
+#endif // ANDROID_ENABLED || VITA_ENABLED
 			texture->images.resize(0);
 		} break;
 		case VS::TEXTURE_TYPE_CUBEMAP: {
@@ -821,7 +824,7 @@ Ref<Image> RasterizerStorageGLES2::texture_get_data(RID p_texture, int p_layer) 
 	Image *img = memnew(Image(texture->alloc_width, texture->alloc_height, texture->mipmaps > 1, real_format, data));
 
 	return Ref<Image>(img);
-#else
+#else // GLES_OVER_GL
 
 	Image::Format real_format;
 	GLenum gl_format;
@@ -889,7 +892,7 @@ Ref<Image> RasterizerStorageGLES2::texture_get_data(RID p_texture, int p_layer) 
 
 	return Ref<Image>(img);
 
-#endif
+#endif // GLES_OVER_GL
 }
 
 void RasterizerStorageGLES2::texture_set_flags(RID p_texture, uint32_t p_flags) {
@@ -1264,7 +1267,11 @@ void RasterizerStorageGLES2::sky_set_texture(RID p_sky, RID p_panorama, int p_ra
 			glCopyTexSubImage2D(_cube_side_enum[i], lod, 0, 0, 0, 0, size, size);
 		}
 
+#ifdef VITA_ENABLED
+		size = 0;
+#else // VITA_ENABLED
 		size >>= 1;
+#endif // VITA_ENABLED
 
 		mm_level--;
 
@@ -3630,9 +3637,9 @@ void RasterizerStorageGLES2::skeleton_allocate(RID p_skeleton, int p_bones, bool
 
 #ifdef GLES_OVER_GL
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, p_bones * (skeleton->use_2d ? 2 : 3), 1, 0, GL_RGBA, GL_FLOAT, nullptr);
-#else
+#else // GLES_OVER_GL
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, p_bones * (skeleton->use_2d ? 2 : 3), 1, 0, GL_RGBA, GL_FLOAT, NULL);
-#endif
+#endif // GLES_OVER_GL
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -5009,17 +5016,17 @@ void RasterizerStorageGLES2::_render_target_allocate(RenderTarget *rt) {
 	if (rt->flags[RasterizerStorage::RENDER_TARGET_TRANSPARENT]) {
 #ifdef GLES_OVER_GL
 		color_internal_format = GL_RGBA8;
-#else
+#else // GLES_OVER_GL
 		color_internal_format = GL_RGBA;
-#endif
+#endif // GLES_OVER_GL
 		color_format = GL_RGBA;
 		image_format = Image::FORMAT_RGBA8;
 	} else {
 #ifdef GLES_OVER_GL
 		color_internal_format = GL_RGB8;
-#else
+#else // GLES_OVER_GL
 		color_internal_format = GL_RGB;
-#endif
+#endif // GLES_OVER_GL
 		color_format = GL_RGB;
 		image_format = Image::FORMAT_RGB8;
 	}
@@ -5160,7 +5167,7 @@ void RasterizerStorageGLES2::_render_target_allocate(RenderTarget *rt) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 		glFramebufferTexture2DMultisample(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt->multisample_color, 0, msaa);
-#endif
+#endif // GLES_OVER_GL || IPHONE_ENABLED
 
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
@@ -5178,9 +5185,9 @@ void RasterizerStorageGLES2::_render_target_allocate(RenderTarget *rt) {
 			rt->multisample_depth = 0;
 #ifdef ANDROID_ENABLED
 			glDeleteTextures(1, &rt->multisample_color);
-#else
+#else // ANDROID_ENABLED
 			glDeleteRenderbuffers(1, &rt->multisample_color);
-#endif
+#endif // ANDROID_ENABLED
 			rt->multisample_color = 0;
 		}
 
@@ -5188,7 +5195,7 @@ void RasterizerStorageGLES2::_render_target_allocate(RenderTarget *rt) {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 #ifdef ANDROID_ENABLED
 		glBindTexture(GL_TEXTURE_2D, 0);
-#endif
+#endif // ANDROID_ENABLED
 
 	} else
 #endif // JAVASCRIPT_ENABLED
@@ -5276,7 +5283,7 @@ void RasterizerStorageGLES2::_render_target_allocate(RenderTarget *rt) {
 #ifdef GLES_OVER_GL
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level);
-#endif
+#endif // GLES_OVER_GL
 			} else {
 				// Can't render to specific levels of a mipmap in ES 2.0 or Webgl so create a texture for each level
 				for (int l = 0; l < level + 1; l++) {
@@ -5425,9 +5432,9 @@ void RasterizerStorageGLES2::_render_target_clear(RenderTarget *rt) {
 		rt->multisample_depth = 0;
 #ifdef ANDROID_ENABLED
 		glDeleteTextures(1, &rt->multisample_color);
-#else
+#else // ANDROID_ENABLED
 		glDeleteRenderbuffers(1, &rt->multisample_color);
-#endif
+#endif // ANDROID_ENABLED
 		rt->multisample_color = 0;
 	}
 }
@@ -5590,7 +5597,7 @@ void RasterizerStorageGLES2::render_target_set_external_texture(RID p_render_tar
 			glFramebufferTexture2DMultisample(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, p_texture_id, 0, msaa);
 
 		} else
-#endif
+#endif // ANDROID_ENABLED
 		{
 			// if MSAA as on before, clear our render buffer
 			if (rt->external.depth != 0 && rt->external.depth_owned) {
@@ -5744,9 +5751,9 @@ RID RasterizerStorageGLES2::canvas_light_shadow_buffer_create(int p_width) {
 	} else {
 #ifdef GLES_OVER_GL
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, cls->size, cls->height, 0, _RED_OES, GL_FLOAT, nullptr);
-#else
+#else // GLES_OVER_GL
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_FLOAT, cls->size, cls->height, 0, _RED_OES, GL_FLOAT, NULL);
-#endif
+#endif // GLES_OVER_GL
 	}
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -6234,19 +6241,19 @@ void RasterizerStorageGLES2::initialize() {
 	config.etc1_supported = false;
 	config.support_npot_repeat_mipmap = true;
 	config.depth_buffer_internalformat = GL_DEPTH_COMPONENT24;
-#else
+#else // GLES_OVER_GL
 	config.float_texture_supported = config.extensions.has("GL_ARB_texture_float") || config.extensions.has("GL_OES_texture_float");
 	config.s3tc_supported = config.extensions.has("GL_EXT_texture_compression_s3tc") || config.extensions.has("WEBGL_compressed_texture_s3tc");
 	config.etc1_supported = config.extensions.has("GL_OES_compressed_ETC1_RGB8_texture") || config.extensions.has("WEBGL_compressed_texture_etc1");
 	config.pvrtc_supported = config.extensions.has("GL_IMG_texture_compression_pvrtc") || config.extensions.has("WEBGL_compressed_texture_pvrtc");
-	config.support_npot_repeat_mipmap = config.extensions.has("GL_OES_texture_npot");
+	config.support_npot_repeat_mipmap = config.extensions.has("GL_OES_texture_npot") || config.extensions.has("GL_IMG_texture_npot");
 
 	// If the desktop build is using S3TC, and you export / run from the IDE for android, if the device supports
 	// S3TC it will crash trying to load these textures, as they are not exported in the APK. This is a simple way
 	// to prevent Android devices trying to load S3TC, by faking lack of hardware support.
-#if defined(ANDROID_ENABLED) || defined(IPHONE_ENABLED)
+#if defined(ANDROID_ENABLED) || defined(IPHONE_ENABLED) || defined(VITA_ENABLED) || (!defined(TOOLS_ENABLED) && defined(HORIZON_ENABLED))
 	config.s3tc_supported = false;
-#endif
+#endif // ANDROID_ENABLED || IPHONE_ENABLED || VITA_ENABLED
 
 #ifdef JAVASCRIPT_ENABLED
 	// RenderBuffer internal format must be 16 bits in WebGL,
@@ -6255,7 +6262,7 @@ void RasterizerStorageGLES2::initialize() {
 	// https://www.khronos.org/registry/webgl/extensions/WEBGL_depth_texture/
 	config.depth_buffer_internalformat = GL_DEPTH_COMPONENT16;
 	config.depth_type = GL_UNSIGNED_INT;
-#else
+#else // JAVASCRIPT_ENABLED
 	// on mobile check for 24 bit depth support for RenderBufferStorage
 	if (config.extensions.has("GL_OES_depth24")) {
 		config.depth_buffer_internalformat = _DEPTH_COMPONENT24_OES;
@@ -6264,8 +6271,8 @@ void RasterizerStorageGLES2::initialize() {
 		config.depth_buffer_internalformat = GL_DEPTH_COMPONENT16;
 		config.depth_type = GL_UNSIGNED_SHORT;
 	}
-#endif
-#endif
+#endif // JAVASCRIPT_ENABLED
+#endif // ANDROID_ENABLED || IPHONE_ENABLED || VITA_ENABLED
 
 #ifndef GLES_OVER_GL
 	//Manually load extensions for android and ios
@@ -6280,8 +6287,8 @@ void RasterizerStorageGLES2::initialize() {
 	void *gles2_lib = dlopen("libGLESv2.so", RTLD_LAZY);
 	glRenderbufferStorageMultisampleEXT = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC)dlsym(gles2_lib, "glRenderbufferStorageMultisampleEXT");
 	glFramebufferTexture2DMultisampleEXT = (PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC)dlsym(gles2_lib, "glFramebufferTexture2DMultisampleEXT");
-#endif
-#endif
+#endif // IPHONE_ENABLED
+#endif // !GLES_OVER_GL
 
 	// Check for multisample support
 	config.multisample_supported = config.extensions.has("GL_EXT_framebuffer_multisample") || config.extensions.has("GL_EXT_multisampled_render_to_texture") || config.extensions.has("GL_APPLE_framebuffer_multisample");
@@ -6289,42 +6296,36 @@ void RasterizerStorageGLES2::initialize() {
 #ifdef GLES_OVER_GL
 	//TODO: causes huge problems with desktop video drivers. Making false for now, needs to be true to render SCREEN_TEXTURE mipmaps
 	config.render_to_mipmap_supported = false;
-#else
+#else // GLES_OVER_GL
 	//check if mipmaps can be used for SCREEN_TEXTURE and Glow on Mobile and web platforms
 	config.render_to_mipmap_supported = config.extensions.has("GL_OES_fbo_render_mipmap") && config.extensions.has("GL_EXT_texture_lod");
-#endif
+#endif // GLES_OVER_GL
 
 #ifdef GLES_OVER_GL
 	config.use_rgba_2d_shadows = false;
 	config.support_depth_texture = true;
 	config.use_rgba_3d_shadows = false;
 	config.support_depth_cubemaps = true;
-#else
+	config.support_32_bits_indices = true;
+	config.support_write_depth = true;
+#else // GLES_OVER_GL
 	config.use_rgba_2d_shadows = !(config.float_texture_supported && config.extensions.has("GL_EXT_texture_rg"));
 	config.support_depth_texture = config.extensions.has("GL_OES_depth_texture") || config.extensions.has("WEBGL_depth_texture");
 	config.use_rgba_3d_shadows = !config.support_depth_texture;
 	config.support_depth_cubemaps = config.extensions.has("GL_OES_depth_texture_cube_map");
-#endif
-
-#ifdef GLES_OVER_GL
-	config.support_32_bits_indices = true;
-#else
 	config.support_32_bits_indices = config.extensions.has("GL_OES_element_index_uint");
-#endif
-
-#ifdef GLES_OVER_GL
-	config.support_write_depth = true;
-#elif defined(JAVASCRIPT_ENABLED)
+#if defined(JAVASCRIPT_ENABLED)
 	config.support_write_depth = false;
-#else
+#else // JAVASCRIPT_ENABLED
 	config.support_write_depth = config.extensions.has("GL_EXT_frag_depth");
-#endif
+#endif // JAVASCRIPT_ENABLED
+#endif // GLES_OVER_GL
 
 	config.support_half_float_vertices = true;
 //every platform should support this except web, iOS has issues with their support, so add option to disable
 #ifdef JAVASCRIPT_ENABLED
 	config.support_half_float_vertices = false;
-#endif
+#endif // JAVASCRIPT_ENABLED
 	bool disable_half_float = GLOBAL_GET("rendering/gles2/compatibility/disable_half_float");
 	if (disable_half_float) {
 		config.support_half_float_vertices = false;
@@ -6372,10 +6373,11 @@ void RasterizerStorageGLES2::initialize() {
 			// This is needed because many OSX devices don't support either UNSIGNED_INT or UNSIGNED_SHORT
 #ifdef GLES_OVER_GL
 			config.depth_internalformat = GL_DEPTH_COMPONENT16;
-#else
-			// OES_depth_texture extension only specifies GL_DEPTH_COMPONENT.
+#else // GLES_OVER_GL
+
+	  		// OES_depth_texture extension only specifies GL_DEPTH_COMPONENT.
 			config.depth_internalformat = GL_DEPTH_COMPONENT;
-#endif
+#endif // GLES_OVER_GL
 			config.depth_type = GL_UNSIGNED_SHORT;
 
 			glGenFramebuffers(1, &fbo);
@@ -6575,7 +6577,7 @@ void RasterizerStorageGLES2::initialize() {
 	}
 	glEnable(GL_POINT_SPRITE);
 	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-#endif
+#endif // GLES_OVER_GL
 
 	config.force_vertex_shading = GLOBAL_GET("rendering/quality/shading/force_vertex_shading");
 	config.use_fast_texture_filter = GLOBAL_GET("rendering/quality/filters/use_nearest_mipmap_filter");

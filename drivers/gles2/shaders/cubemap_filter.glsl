@@ -5,10 +5,10 @@
 #define lowp
 #define mediump
 #define highp
-#else
+#else // USE_GLES_OVER_GL
 precision highp float;
 precision highp int;
-#endif
+#endif // USE_GLES_OVER_GL
 
 attribute highp vec2 vertex; // attrib:0
 /* clang-format on */
@@ -26,43 +26,42 @@ void main() {
 
 // texture2DLodEXT and textureCubeLodEXT are fragment shader specific.
 // Do not copy these defines in the vertex section.
-#ifndef USE_GLES_OVER_GL
+#if !defined(USE_GLES_OVER_GL) && !defined(VITA_ENABLED)
 #ifdef GL_EXT_shader_texture_lod
 #extension GL_EXT_shader_texture_lod : enable
 #define texture2DLod(img, coord, lod) texture2DLodEXT(img, coord, lod)
 #define textureCubeLod(img, coord, lod) textureCubeLodEXT(img, coord, lod)
-#endif
-#endif // !USE_GLES_OVER_GL
+#endif // GL_EXT_shader_texture_lod
+#endif // !USE_GLES_OVER_GL && !VITA_ENABLED
 
-#ifdef GL_ARB_shader_texture_lod
+#if defined(GL_ARB_shader_texture_lod) && !defined(VITA_ENABLED)
 #extension GL_ARB_shader_texture_lod : enable
-#endif
+#endif // GL_ARB_shader_texture_lod && !VITA_ENABLED
 
-#if !defined(GL_EXT_shader_texture_lod) && !defined(GL_ARB_shader_texture_lod)
+#if ( !defined(GL_EXT_shader_texture_lod) && !defined(GL_ARB_shader_texture_lod) ) || VITA_ENABLED
 #define texture2DLod(img, coord, lod) texture2D(img, coord, lod)
 #define textureCubeLod(img, coord, lod) textureCube(img, coord, lod)
-#endif
+#endif // ( !GL_EXT_shader_texture_lod && !GL_ARB_shader_texture_lod ) || VITA_ENABLED
 
 #ifdef USE_GLES_OVER_GL
 #define lowp
 #define mediump
 #define highp
-#else
+#else // USE_GLES_OVER_GL
 #if defined(USE_HIGHP_PRECISION)
 precision highp float;
 precision highp int;
-#else
+#else // USE_HIGHP_PRECISION
 precision mediump float;
 precision mediump int;
-#endif
-
-#endif
+#endif // USE_HIGHP_PRECISION
+#endif // USE_GLES_OVER_GL
 
 #ifdef USE_SOURCE_PANORAMA
 uniform sampler2D source_panorama; //texunit:0
-#else
+#else // USE_SOURCE_PANORAMA
 uniform samplerCube source_cube; //texunit:0
-#endif
+#endif // USE_SOURCE_PANORAMA
 /* clang-format on */
 
 uniform int face_id;
@@ -77,11 +76,11 @@ uniform sampler2D radical_inverse_vdc_cache; // texunit:1
 
 #define SAMPLE_COUNT 64
 
-#else
+#else // LOW_QUALITY
 
 #define SAMPLE_COUNT 512
 
-#endif
+#endif // LOW_QUALITY
 
 #ifdef USE_SOURCE_PANORAMA
 
@@ -98,7 +97,7 @@ vec4 texturePanorama(sampler2D pano, vec3 normal) {
 	return texture2DLod(pano, st, 0.0);
 }
 
-#endif
+#endif // USE_SOURCE_PANORAMA
 
 vec3 texelCoordToVec(vec2 uv, int faceID) {
 	mat3 faceUvVectors[6];
@@ -187,12 +186,12 @@ void main() {
 #ifdef USE_SOURCE_PANORAMA
 
 	gl_FragColor = vec4(texturePanorama(source_panorama, N).rgb, 1.0);
-#else
+#else // USE_SOURCE_PANORAMA
 
 	gl_FragColor = vec4(textureCube(source_cube, N).rgb, 1.0);
-#endif //USE_SOURCE_PANORAMA
+#endif // USE_SOURCE_PANORAMA
 
-#else
+#else // USE_DIRECT_WRITE
 
 	vec4 sum = vec4(0.0);
 
@@ -209,9 +208,10 @@ void main() {
 
 #ifdef USE_SOURCE_PANORAMA
 			vec3 val = texturePanorama(source_panorama, L).rgb;
-#else
+#else // USE_SOURCE_PANORAMA
 			vec3 val = textureCubeLod(source_cube, L, 0.0).rgb;
-#endif
+#endif // USE_SOURCE_PANORAMA
+
 			//mix using Linear, to approximate high end back-end
 			val = mix(pow((val + vec3(0.055)) * (1.0 / (1.0 + 0.055)), vec3(2.4)), val * (1.0 / 12.92), vec3(lessThan(val, vec3(0.04045))));
 
@@ -227,5 +227,5 @@ void main() {
 	sum.rgb = mix((vec3(1.0) + a) * pow(sum.rgb, vec3(1.0 / 2.4)) - a, 12.92 * sum.rgb, vec3(lessThan(sum.rgb, vec3(0.0031308))));
 
 	gl_FragColor = vec4(sum.rgb, 1.0);
-#endif
+#endif // USE_DIRECT_WRITE
 }

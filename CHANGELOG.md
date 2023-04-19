@@ -21,7 +21,8 @@ See the [release announcement](https://godotengine.org/article/maintenance-relea
 
 #### Physics
 
-- Store Bullet total gravity, linear damp and angular damp calculations ([GH-69823](https://github.com/godotengine/godot/pull/69823)).
+- Store Bullet total gravity, linear damp and angular damp
+  calculations ([GH-69823](https://github.com/godotengine/godot/pull/69823)).
 
 #### Rendering
 
@@ -451,6 +452,8 @@ See the [release announcement](https://godotengine.org/article/godot-3-5-cant-st
 - Windows: Implement limited surrogate pairs support (better UTF-8 support, emoji fonts) ([GH-54625](https://github.com/godotengine/godot/pull/54625)).
 - Windows: Add support for handling network share paths ([GH-61985](https://github.com/godotengine/godot/pull/61985)).
 - Add stylus inverted/eraser support to InputEventMouseMotion event (desktop platforms) ([GH-62723](https://github.com/godotengine/godot/pull/62723)).
+- [Vita](https://github.com/SonicMastr/godot-vita/releases/tag/3.5-rc5-vita1): Added engine build support and project
+  exporter
 
 #### Rendering
 
@@ -1255,13 +1258,27 @@ See the [release announcement](https://godotengine.org/article/godot-3-4-is-rele
 - Fixed `rotate_y` property of particle shaders ([GH-46687](https://github.com/godotengine/godot/pull/46687)).
 - Fixed behavior of velocity spread in particles ([GH-47310](https://github.com/godotengine/godot/pull/47310)).
 - Fixes depth sorting of meshes with transparent textures ([GH-50721](https://github.com/godotengine/godot/pull/50721)).
-- Fix flipped binormal in `SpatialMaterial` triplanar mapping ([GH-49950](https://github.com/godotengine/godot/pull/49950)).
-- Fix `CanvasItem` bounding rect calculation in some cases ([GH-49160](https://github.com/godotengine/godot/pull/49160)).
-- Clamp negative colors regardless of the tonemapper to avoid artifacts ([GH-51439](https://github.com/godotengine/godot/pull/51439)).
+- Fix flipped binormal in `SpatialMaterial` triplanar
+  mapping ([GH-49950](https://github.com/godotengine/godot/pull/49950)).
+- Fix `CanvasItem` bounding rect calculation in some
+  cases ([GH-49160](https://github.com/godotengine/godot/pull/49160)).
+- Clamp negative colors regardless of the tonemapper to avoid
+  artifacts ([GH-51439](https://github.com/godotengine/godot/pull/51439)).
 - Fix Y billboard shear when rotating camera ([GH-52151](https://github.com/godotengine/godot/pull/52151)).
-- Add half frame to `floor()` for animated particles UV to compensate precision errors ([GH-53233](https://github.com/godotengine/godot/pull/53233)).
-- Prevent shaders from generating code before the constructor finishes ([GH-52475](https://github.com/godotengine/godot/pull/52475)).
+- Add half frame to `floor()` for animated particles UV to compensate precision
+  errors ([GH-53233](https://github.com/godotengine/godot/pull/53233)).
+- Prevent shaders from generating code before the constructor
+  finishes ([GH-52475](https://github.com/godotengine/godot/pull/52475)).
 
+## [3.3.2] - 2021-07-14
+
+See the [release announcement](https://github.com/Stary2001/godot/releases/tag/v3.3.2-stable_switch_initial) for
+details.
+
+- Switch: Rewritten input to use the new LibNX HID API
+- Switch: User data access is now supported ([Stary2001: GH-24](https://github.com/Stary2001/godot/pull/24))
+- Switch: Threaded rendering is broken, make sure we don't use
+  it ([Stary2001: GH-25](https://github.com/Stary2001/godot/pull/25))
 
 ## [3.3] - 2021-04-21
 
@@ -1613,7 +1630,9 @@ See the [release announcement](https://godotengine.org/article/maintenance-relea
 - Android: Add option to enable high precision float in GLES2
 - C#: Add Visual Studio support
 - HTML5: Improvements and bugfixes backported from the `master` branch
-  - Note: This PR adds threads support, but as this support is still [disabled in many browsers](https://caniuse.com/#feat=sharedarraybuffer) due to security concerns, the option is not enabled by default. Build HTML5 templates with `threads_enabled=yes` to test it.
+  - Note: This PR adds threads support, but as this support is
+    still [disabled in many browsers](https://caniuse.com/#feat=sharedarraybuffer) due to security concerns, the option
+    is not enabled by default. Build HTML5 templates with `threads_enabled=yes` to test it.
 - Input: Support SDL2 half axes and inverted axes mappings
 - iOS: Add support of iOS's dynamic libraries to GDNative
 - iOS: Add methods to embed a framework
@@ -1621,6 +1640,8 @@ See the [release announcement](https://godotengine.org/article/maintenance-relea
 - macOS: Implement confined mouse mode
 - macOS: Implement seamless display scaling
 - Rendering: Allow nearest neighbor lookup when using mipmaps
+- Switch: hbmenu file association for `.pck` files
+- Switch: nxlink/build_romfs are now bundled with the editor binary
 
 ### Changed
 
@@ -1770,6 +1791,8 @@ See the [release announcement](https://godotengine.org/article/maintenance-relea
 ### Added
 
 - Skin: Add support for named binds
+- [Switch](https://github.com/Stary2001/godot/tree/v3.2.1-stable-switch): Added engine build support and project
+  exporter
 
 ### Changed
 
@@ -2917,6 +2940,7 @@ See the [release announcement](https://godotengine.org/article/maintenance-relea
 [3.5.1]: https://downloads.tuxfamily.org/godotengine/3.5.1/Godot_v3.5.1-stable_changelog_chrono.txt
 [3.5]: https://downloads.tuxfamily.org/godotengine/3.5/Godot_v3.5-stable_changelog_chrono.txt
 [3.4]: https://downloads.tuxfamily.org/godotengine/3.4/Godot_v3.4-stable_changelog_chrono.txt
+[3.3.2]: https://github.com/Stary2001/godot/releases/tag/v3.3.2-stable_switch_initial
 [3.3]: https://downloads.tuxfamily.org/godotengine/3.3/Godot_v3.3-stable_changelog_chrono.txt
 [3.2.3]: https://downloads.tuxfamily.org/godotengine/3.2.3/Godot_v3.2.3-stable_changelog_chrono.txt
 [3.2.2]: https://downloads.tuxfamily.org/godotengine/3.2.2/Godot_v3.2.2-stable_changelog_chrono.txt

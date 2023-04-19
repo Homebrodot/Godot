@@ -30,7 +30,7 @@
 
 #include "ip_unix.h"
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED)
+#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HORIZON_ENABLED) || defined(VITA_ENABLED)
 
 #include <string.h>
 
@@ -42,26 +42,30 @@
 #include <ws2tcpip.h>
 #ifndef UWP_ENABLED
 #include <iphlpapi.h>
-#endif
+#endif // !UWP_ENABLED
 #else // UNIX
 #include <netdb.h>
 #ifdef ANDROID_ENABLED
 // We could drop this file once we up our API level to 24,
 // where the NDK's ifaddrs.h supports to needed getifaddrs.
 #include "thirdparty/misc/ifaddrs-android.h"
-#else
+#else // ANDROID_ENABLED
 #ifdef __FreeBSD__
 #include <sys/types.h>
-#endif
+#endif // __FreeBSD__
+#if !defined(HORIZON_ENABLED) && !defined(VITA_ENABLED)
 #include <ifaddrs.h>
-#endif
+#endif // !HORIZON_ENABLED && !VITA_ENABLED
+#endif // ANDROID_ENABLED
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #ifdef __FreeBSD__
 #include <netinet/in.h>
-#endif
+#endif // __FreeBSD__
+#ifndef VITA_ENABLED
 #include <net/if.h> // Order is important on OpenBSD, leave as last
-#endif
+#endif // VITA_ENABLED
+#endif // WINDOWS_ENABLED
 
 static IP_Address _sockaddr2ip(struct sockaddr *p_addr) {
 	IP_Address ip;
@@ -159,7 +163,7 @@ void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) co
 	}
 }
 
-#else
+#else // UWP_ENABLED
 
 void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const {
 	ULONG buf_size = 1024;
@@ -205,11 +209,12 @@ void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) co
 	memfree(addrs);
 };
 
-#endif
+#endif // UWP_ENABLED
 
-#else // UNIX
+#else // WINDOWS_ENABLED
 
 void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const {
+#if !defined(HORIZON_ENABLED) && !defined(VITA_ENABLED)
 	struct ifaddrs *ifAddrStruct = nullptr;
 	struct ifaddrs *ifa = nullptr;
 	int family;
@@ -244,8 +249,10 @@ void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) co
 	if (ifAddrStruct != nullptr) {
 		freeifaddrs(ifAddrStruct);
 	}
+#endif // VITA_ENABLED || HORIZON_ENABLED
 }
-#endif
+
+#endif // WINDOWS_ENABLED
 
 void IP_Unix::make_default() {
 	_create = _create_unix;
@@ -258,4 +265,4 @@ IP *IP_Unix::_create_unix() {
 IP_Unix::IP_Unix() {
 }
 
-#endif
+#endif // UNIX_ENABLED || WINDOWS_ENABLED || HORIZON_ENABLED || VITA_ENABLED

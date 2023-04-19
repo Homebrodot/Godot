@@ -1,5 +1,25 @@
 name: 🐧 Linux Builds
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - ".github/workflows/**"
+      - "platform/**"
+      - "!.github/workflows/linux_builds.yml"
+      - "!platform/register_platform_apis.h"
+      - "!platform/SCsub"
+      - "!platform/server/**"
+      - "!platform/x11"
+      - "!platform/*/export/**"
+  pull_request:
+    paths-ignore:
+      - ".github/workflows/**"
+      - "platform/**"
+      - "!.github/workflows/linux_builds.yml"
+      - "!platform/register_platform_apis.h"
+      - "!platform/SCsub"
+      - "!platform/server/**"
+      - "!platform/x11"
+      - "!platform/*/export/**"
 
 # Global Settings
 env:
@@ -13,19 +33,18 @@ concurrency:
 
 jobs:
   build-linux:
-    runs-on: "ubuntu-20.04"
+    runs-on: ubuntu-20.04
     name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: Editor w/ Mono (target=release_debug, tools=yes)
-            cache-name: linux-editor-mono
+          - name: Editor without Mono (target=release_debug, tools=yes)
+            cache-name: linux-editor
             target: release_debug
             tools: true
-            sconsflags: module_mono_enabled=yes mono_static=yes mono_glue=no
-            bin: "./bin/godot.x11.opt.tools.64.mono"
-            build-mono: true
+            bin: "./bin/godot.x11.opt.tools.64"
+            build-mono: false
             artifact: true
 
           - name: Editor and sanitizers (target=debug, tools=yes, use_asan=yes, use_ubsan=yes, linker=gold)
@@ -39,14 +58,6 @@ jobs:
             # Skip 2GiB artifact speeding up action.
             artifact: false
 
-          - name: Template w/ Mono (target=release, tools=no)
-            cache-name: linux-template-mono
-            target: release
-            tools: false
-            sconsflags: module_mono_enabled=yes mono_static=yes mono_glue=no debug_symbols=no
-            build-mono: false
-            artifact: true
-
     steps:
       - uses: actions/checkout@v3
 
@@ -58,9 +69,8 @@ jobs:
           sudo cp -f misc/ci/sources.list /etc/apt/sources.list
           sudo apt-get update
           # The actual dependencies
-          sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
-              libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev \
-              libdbus-1-dev libudev-dev libxi-dev libxrandr-dev yasm xvfb wget unzip
+          sudo apt-get install build-essential scons pkg-config libx11-dev libxcursor-dev libxinerama-dev \
+              libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm -y
 
       - name: Setup Godot build cache
         uses: ./.github/actions/godot-cache
