@@ -1,6 +1,4 @@
 import os
-import platform
-import sys
 import os.path
 
 
@@ -67,7 +65,8 @@ def configure(env):
     env["AR"] = vita_sdk_path + "/bin/arm-vita-eabi-ar"
     env["STRIP"] = vita_sdk_path + "/bin/arm-vita-eabi-strip"
     env["RANLIB"] = vita_sdk_path + "/bin/arm-vita-eabi-ranlib"
-    ## Build type
+
+    # Build type
 
     pkg_config_path = "{}/arm-vita-eabi/lib/pkgconfig/pkgconfig"
 
@@ -126,11 +125,11 @@ def configure(env):
 
         # env.Append(LINKFLAGS=['-rdynamic'])
 
-    ## Architecture
+    # Architecture
 
     env["bits"] = "32"
 
-    ## Flags
+    # Flags
 
     # Linkflags below this line should typically stay the last ones
     # if not env['builtin_zlib']:

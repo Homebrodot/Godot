@@ -87,6 +87,7 @@ platform/android/java/*/libs/
 platform/javascript/node_modules/
 
 # Vita
+temp-build/
 *.vpk
 
 # Switch

@@ -68,13 +68,16 @@ def get_flags():
 
 
 def configure(env):
+    dkp = os.environ.get("DEVKITPRO", "/opt/devkitpro")
     env["CC"] = "aarch64-none-elf-gcc"
     env["CXX"] = "aarch64-none-elf-g++"
     env["LD"] = "aarch64-none-elf-ld"
 
-    ## Build type
+    env["DEVKITPRO"] = dkp
+    env["DKP_TOOLS_BIN"] = "{}/tools/bin".format(dkp)
 
-    dkp = os.environ.get("DEVKITPRO")
+    # Build type
+
     env["ENV"]["DEVKITPRO"] = dkp
     updated_path = "{}/portlibs/switch/bin:{}/devkitA64/bin:".format(dkp, dkp) + os.environ["PATH"]
     env["ENV"]["PATH"] = updated_path
@@ -118,7 +121,7 @@ def configure(env):
         env.Prepend(CCFLAGS=["-g3", "-DDEBUG_ENABLED", "-DDEBUG_MEMORY_ENABLED"])
         # env.Append(LINKFLAGS=['-rdynamic'])
 
-    ## Architecture
+    # Architecture
 
     env["bits"] = "64"
 
@@ -147,7 +150,7 @@ def configure(env):
     env.Append(CCFLAGS=["-pipe"])
     env.Append(LINKFLAGS=["-pipe"])
 
-    ## Dependencies
+    # Dependencies
 
     if env["touch"]:
         env.Append(CPPFLAGS=["-DTOUCH_ENABLED"])

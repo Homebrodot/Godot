@@ -8,7 +8,8 @@ files = [
     "audio_driver_vita.cpp",
 ]
 
-prog = env.add_program("#bin/vita/godot", files)
+# Build the engine
+prog = env.add_program("#temp-build/godot", files)
 build_target = env["target"]
 env.Append(
     BUILDERS={
@@ -16,31 +17,31 @@ env.Append(
         "VitaEBOOT": Builder(action=env["VITASDK_BIN"] + "vita-make-fself -c -na $SOURCE $TARGET"),
     }
 )
-stripped_elf_path = "#bin/vita/vita_" + env["target"] + "_stripped"
+stripped_elf_path = "#temp-build/vita_" + build_target + "_stripped"
 env.Command(
     stripped_elf_path, prog, [Copy("$TARGET", "$SOURCE"), env["VITASDK_BIN"] + "arm-vita-eabi-strip -g $TARGET"]
 )
-env.VitaELF("#bin/vita/vita_" + env["target"] + ".velf", stripped_elf_path)
-env.VitaEBOOT("#bin/vita/eboot.bin", "#bin/vita/vita_" + env["target"] + ".velf")
+env.VitaELF("#temp-build/vita_" + build_target + ".velf", stripped_elf_path)
+env.VitaEBOOT("#temp-build/eboot.bin", "#temp-build/vita_" + build_target + ".velf")
 
+# Make the release and clean up
 env.Command(
-    "#bin/vita/vita_release/eboot.bin",
-    "#bin/vita/eboot.bin",
-    [
-        Copy("$TARGET", "$SOURCE"),
-    ],
+    "#temp-build/vita_release/eboot.bin",
+    "#temp-build/eboot.bin",
+    Copy("$TARGET", "$SOURCE"),
 )
 env.Command(
-    "#bin/vita/vita_release/",
+    "#temp-build/vita_release/",
     "#platform/vita/app/",
-    [
-        Copy("$TARGET", "$SOURCE"),
-    ],
+    Copy("$TARGET", "$SOURCE"),
 )
 env.Command(
     "#bin/vita_release.zip",
-    "#bin/vita/vita_release",
-    [
-        "cd $SOURCE && zip -r ../../$TARGET .",
-    ],
+    "#temp-build/vita_release",
+    "cd $SOURCE && zip -rd ../../$TARGET .",
+)
+env.Command(
+    "#temp_build",
+    None,
+    "rm -rf temp-build"
 )
