@@ -111,9 +111,17 @@ PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC glFramebufferTexture2DMultisampleEXT
 #define glFramebufferTexture2DMultisample glFramebufferTexture2DMultisampleEXT
 
 #elif defined(UWP_ENABLED)
+
 #include <GLES2/gl2ext.h>
 #define glRenderbufferStorageMultisample glRenderbufferStorageMultisampleANGLE
 #define glFramebufferTexture2DMultisample glFramebufferTexture2DMultisampleANGLE
+
+#elif defined(VITA_ENABLED)
+
+#include <GLES2/gl2ext.h>
+#define glRenderbufferStorageMultisample glRenderbufferStorageMultisampleIMG
+#define glFramebufferTexture2DMultisample glFramebufferTexture2DMultisampleIMG
+
 #endif
 
 #define GL_TEXTURE_3D 0x806F
@@ -533,7 +541,7 @@ void RasterizerStorageGLES2::texture_allocate(RID p_texture, int p_width, int p_
 			texture->images.resize(1);
 		} break;
 		case VS::TEXTURE_TYPE_EXTERNAL: {
-#ifdef ANDROID_ENABLED
+#if defined(ANDROID_ENABLED) || defined(VITA_ENABLED)
 			texture->target = _GL_TEXTURE_EXTERNAL_OES;
 #else
 			texture->target = GL_TEXTURE_2D;
@@ -1266,7 +1274,11 @@ void RasterizerStorageGLES2::sky_set_texture(RID p_sky, RID p_panorama, int p_ra
 			glCopyTexSubImage2D(_cube_side_enum[i], lod, 0, 0, 0, 0, size, size);
 		}
 
+#ifdef VITA_ENABLED
+		size = 0;
+#else // VITA_ENABLED
 		size >>= 1;
+#endif // !VITA_ENABLED
 
 		mm_level--;
 
@@ -6246,7 +6258,7 @@ void RasterizerStorageGLES2::initialize() {
 	// If the desktop build is using S3TC, and you export / run from the IDE for android, if the device supports
 	// S3TC it will crash trying to load these textures, as they are not exported in the APK. This is a simple way
 	// to prevent Android devices trying to load S3TC, by faking lack of hardware support.
-#if defined(ANDROID_ENABLED) || defined(IPHONE_ENABLED)
+#if defined(ANDROID_ENABLED) || defined(IPHONE_ENABLED) || defined(VITA_ENABLED)
 	config.s3tc_supported = false;
 #endif
 

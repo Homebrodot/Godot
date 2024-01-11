@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  ip_unix.h                                                             */
+/*  joypad_vita.h                                                         */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,27 +28,24 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef IP_UNIX_H
-#define IP_UNIX_H
+#include "main/input_default.h"
+#include <psp2/ctrl.h>
+#include <psp2/motion.h>
+#include <psp2/touch.h>
 
-#include "core/io/ip.h"
+#ifndef JOYPAD_VITA_H
+#define JOYPAD_VITA_H
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HOMEBREW_ENABLED)
-
-class IP_Unix : public IP {
-	GDCLASS(IP_Unix, IP);
-
-	virtual void _resolve_hostname(List<IP_Address> &r_addresses, const String &p_hostname, Type p_type = TYPE_ANY) const;
-
-	static IP *_create_unix();
-
+class JoypadVita {
 public:
-	virtual void get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const;
+	JoypadVita(InputDefault *in);
+	~JoypadVita();
+	void process_joypads();
 
-	static void make_default();
-	IP_Unix();
+private:
+	InputDefault *input;
+	SceCtrlData pad_input;
+	int button_count;
 };
 
-#endif
-
-#endif // IP_UNIX_H
+#endif // JOYPAD_VITA_H

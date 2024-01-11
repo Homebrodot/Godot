@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  ip_unix.h                                                             */
+/*  godot_vita.cpp                                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,27 +28,61 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef IP_UNIX_H
-#define IP_UNIX_H
+#include <limits.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-#include "core/io/ip.h"
+#include "main/main.h"
+#include "os_vita.h"
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HOMEBREW_ENABLED)
+#include <taihen.h>
 
-class IP_Unix : public IP {
-	GDCLASS(IP_Unix, IP);
-
-	virtual void _resolve_hostname(List<IP_Address> &r_addresses, const String &p_hostname, Type p_type = TYPE_ANY) const;
-
-	static IP *_create_unix();
-
-public:
-	virtual void get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const;
-
-	static void make_default();
-	IP_Unix();
-};
-
+#ifndef MEMORY_GRAPHICS_MB
+#define MEMORY_GRAPHICS_MB 256 // Default Split, 256 Graphics/221 Main
 #endif
+#define MEMORY_NEWLIB_MB (477 - MEMORY_GRAPHICS_MB)
+#define MEMORY_SCELIBC_MB 10
 
-#endif // IP_UNIX_H
+//#define DEVKIT_ENABLED 1
+
+int _newlib_heap_size_user = MEMORY_NEWLIB_MB * 1024 * 1024;
+unsigned int sceLibcHeapSize = MEMORY_SCELIBC_MB * 1024 * 1024;
+
+int main(int argc, char *argv[]) {
+	OS_Vita os;
+	char title_id[0xA];
+	char app_dir_path[0x100];
+	char app_kernel_module_path[0x100];
+	SceUID pid = -1;
+	sceKernelLoadStartModule("vs0:sys/external/libfios2.suprx", 0, NULL, 0, NULL, NULL);
+	sceKernelLoadStartModule("vs0:sys/external/libc.suprx", 0, NULL, 0, NULL, NULL);
+
+	pid = sceKernelGetProcessId();
+	sceAppMgrAppParamGetString(pid, 12, title_id, sizeof(title_id));
+	snprintf(app_dir_path, sizeof(app_dir_path), "ux0:app/%s", title_id);
+	snprintf(app_kernel_module_path, sizeof(app_kernel_module_path), "%s/module/libgpu_es4_kernel_ext.skprx", app_dir_path);
+
+	SceUID res = taiLoadStartKernelModule(app_kernel_module_path, 0, NULL, 0);
+	if (res < 0) {
+		sceClibPrintf("Failed to load kernel module: %08x\n", res);
+	}
+
+	scePowerSetArmClockFrequency(444);
+	scePowerSetBusClockFrequency(222);
+	scePowerSetGpuClockFrequency(222);
+	scePowerSetGpuXbarClockFrequency(166);
+
+	sceClibPrintf("Showing the path now UwU: %d %s\n", argc, argv[0]);
+	char *args[] = { "--path", "app0:/game_data", "--main-pack", "app0:/game_data/game.pck" };
+
+	Error err = Main::setup("", sizeof(args) / sizeof(args[0]), args);
+	if (err != OK) {
+		return 255;
+	}
+
+	if (Main::start())
+		os.run(); // it is actually the OS that decides how to run
+	Main::cleanup();
+	return 0;
+}

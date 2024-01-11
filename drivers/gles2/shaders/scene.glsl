@@ -234,7 +234,9 @@ void light_compute(
 	m_var = 0.662002687 * S1 + 0.684122060 * S2 - 0.323583601 * S3 - 0.0225411470 * m_var;\
 	}
 */
+#ifndef VITA_ENABLED
 #define SRGB_APPROX(m_var)
+#endif // VITA_ENABLED
 
 	float NdotL = dot(N, L);
 	float cNdotL = max(NdotL, 0.0); // clamped NdotL
@@ -271,7 +273,9 @@ void light_compute(
 	diffuse_brdf_NL = cNdotL * (1.0 / M_PI);
 #endif
 
+#ifndef VITA_ENABLED
 	SRGB_APPROX(diffuse_brdf_NL)
+#endif // VITA_ENABLED
 
 	diffuse_interp += light_color * diffuse_brdf_NL * attenuation;
 
@@ -727,22 +731,26 @@ VERTEX_SHADER_CODE
 
 // texture2DLodEXT and textureCubeLodEXT are fragment shader specific.
 // Do not copy these defines in the vertex section.
+#ifndef VITA_ENABLED
+
 #ifndef USE_GLES_OVER_GL
 #ifdef GL_EXT_shader_texture_lod
 #extension GL_EXT_shader_texture_lod : enable
 #define texture2DLod(img, coord, lod) texture2DLodEXT(img, coord, lod)
 #define textureCubeLod(img, coord, lod) textureCubeLodEXT(img, coord, lod)
-#endif
+#endif // GL_EXT_shader_texture_lod
 #endif // !USE_GLES_OVER_GL
 
 #ifdef GL_ARB_shader_texture_lod
 #extension GL_ARB_shader_texture_lod : enable
-#endif
+#endif // GL_ARB_shader_texture_lod
 
-#if !defined(GL_EXT_shader_texture_lod) && !defined(GL_ARB_shader_texture_lod)
+#endif // !VITA_ENABLED
+
+#if (!defined(GL_EXT_shader_texture_lod) && !defined(GL_ARB_shader_texture_lod)) || defined(VITA_ENABLED)
 #define texture2DLod(img, coord, lod) texture2D(img, coord, lod)
 #define textureCubeLod(img, coord, lod) textureCube(img, coord, lod)
-#endif
+#endif // (!GL_EXT_shader_texture_lod && !GL_ARB_shader_texture_lod) || VITA_ENABLED
 
 #ifdef USE_GLES_OVER_GL
 #define lowp
@@ -1284,7 +1292,9 @@ void light_compute(
 	m_var = 0.662002687 * S1 + 0.684122060 * S2 - 0.323583601 * S3 - 0.0225411470 * m_var;\
 	}
 */
+#ifndef VITA_ENABLED
 #define SRGB_APPROX(m_var)
+#endif // VITA_ENABLED
 
 #if defined(USE_LIGHT_SHADER_CODE)
 	// light is written by the light shader
@@ -1377,7 +1387,9 @@ LIGHT_SHADER_CODE
 		diffuse_brdf_NL = cNdotL * (1.0 / M_PI);
 #endif
 
+#ifndef VITA_ENABLED
 		SRGB_APPROX(diffuse_brdf_NL)
+#endif // VITA_ENABLED
 
 		diffuse_light += light_color * diffuse_color * diffuse_brdf_NL * attenuation;
 
@@ -1457,7 +1469,9 @@ LIGHT_SHADER_CODE
 
 #endif
 
+#ifndef VITA_ENABLED
 		SRGB_APPROX(specular_brdf_NL)
+#endif // VITA_ENABLED
 		specular_light += specular_brdf_NL * light_color * specular_blob_intensity * attenuation;
 
 #if defined(LIGHT_USE_CLEARCOAT)

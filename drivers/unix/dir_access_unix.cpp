@@ -45,6 +45,11 @@
 #include <sys/statvfs.h>
 #endif
 
+#ifdef VITA_ENABLED
+#include <psp2/appmgr.h>
+#include <psp2/io/stat.h>
+#endif // VITA_ENABLED
+
 #ifdef HAVE_MNTENT
 #include <mntent.h>
 #endif
@@ -130,6 +135,10 @@ String DirAccessUnix::get_next() {
 
 	String fname = fix_unicode_name(entry->d_name);
 
+#ifdef VITA_ENABLED
+#define SCE_SO_ISDIR(m) (((m)&SCE_SO_IFMT) == SCE_SO_IFDIR)
+	_cisdir = SCE_SO_ISDIR(entry->d_stat.st_attr);
+#else // VITA_ENABLED
 	// Look at d_type to determine if the entry is a directory, unless
 	// its type is unknown (the file system does not support it) or if
 	// the type is a link, in that case we want to resolve the link to
@@ -147,6 +156,7 @@ String DirAccessUnix::get_next() {
 	} else {
 		_cisdir = (entry->d_type == DT_DIR);
 	}
+#endif // !VITA_ENABLED
 
 	_cishidden = is_hidden(fname);
 
@@ -395,6 +405,9 @@ Error DirAccessUnix::remove(String p_path) {
 }
 
 bool DirAccessUnix::is_link(String p_file) {
+#ifdef VITA_ENABLED
+	return false;
+#else // VITA_ENABLED
 	if (p_file.is_rel_path())
 		p_file = get_current_dir().plus_file(p_file);
 
@@ -405,9 +418,13 @@ bool DirAccessUnix::is_link(String p_file) {
 		return FAILED;
 
 	return S_ISLNK(flags.st_mode);
+#endif // !VITA_ENABLED
 }
 
 String DirAccessUnix::read_link(String p_file) {
+#ifdef VITA_ENABLED
+	return p_file;
+#else // VITA_ENABLED
 	if (p_file.is_rel_path())
 		p_file = get_current_dir().plus_file(p_file);
 
@@ -424,13 +441,14 @@ String DirAccessUnix::read_link(String p_file) {
 		link.parse_utf8(buf, len);
 	}
 	return link;
-#endif
+#endif // !HORIZON_ENABLED
+#endif // !VITA_ENABLED
 }
 
 Error DirAccessUnix::create_link(String p_source, String p_target) {
-#ifdef HORIZON_ENABLED
+#ifdef HOMEBREW_ENABLED
 	return FAILED;
-#else
+#else // HOMEBREW_ENABLED
 	if (p_target.is_rel_path())
 		p_target = get_current_dir().plus_file(p_target);
 
@@ -442,7 +460,7 @@ Error DirAccessUnix::create_link(String p_source, String p_target) {
 	} else {
 		return FAILED;
 	}
-#endif
+#endif // HOMEBREW_ENABLED
 }
 
 uint64_t DirAccessUnix::get_space_left() {

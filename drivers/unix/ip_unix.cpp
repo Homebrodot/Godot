@@ -30,7 +30,7 @@
 
 #include "ip_unix.h"
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HORIZON_ENABLED)
+#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HOMEBREW_ENABLED)
 
 #include <string.h>
 
@@ -53,16 +53,18 @@
 #ifdef __FreeBSD__
 #include <sys/types.h>
 #endif
-#ifndef HORIZON_ENABLED
+#ifndef HOMEBREW_ENABLED
 #include <ifaddrs.h>
-#endif
+#endif // !HOMEBREW_ENABLED
 #endif
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #ifdef __FreeBSD__
 #include <netinet/in.h>
 #endif
+#ifndef VITA_ENABLED
 #include <net/if.h> // Order is important on OpenBSD, leave as last
+#endif // !VITA_ENABLED
 #endif
 
 static IP_Address _sockaddr2ip(struct sockaddr *p_addr) {
@@ -161,7 +163,7 @@ void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) co
 	}
 }
 
-#else
+#else // UWP_ENABLED
 
 void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const {
 	ULONG buf_size = 1024;
@@ -207,19 +209,15 @@ void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) co
 	memfree(addrs);
 };
 
-#endif
+#endif // !UWP_ENABLED
 
-#else // UNIX
+#else // WINDOWS_ENABLED
 
+void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const {
 #ifdef HORIZON_ENABLED
-void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const {
-	struct ifaddrs *ifAddrStruct = nullptr;
-	struct ifaddrs *ifa = nullptr;
 	// todo: nifm
-}
-
-#else
-void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const {
+#else // HORIZON_ENABLED
+#ifndef VITA_ENABLED
 	struct ifaddrs *ifAddrStruct = nullptr;
 	struct ifaddrs *ifa = nullptr;
 	int family;
@@ -254,9 +252,10 @@ void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) co
 	if (ifAddrStruct != nullptr) {
 		freeifaddrs(ifAddrStruct);
 	}
+#endif // !VITA_ENABLED
+#endif // !HORIZON_ENABLED
 }
-#endif
-#endif
+#endif // !WINDOWS_ENABLED
 
 void IP_Unix::make_default() {
 	_create = _create_unix;

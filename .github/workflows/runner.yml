@@ -49,3 +49,8 @@ jobs:
     name: 🔄 Switch
     needs: static-checks
     uses: ./.github/workflows/switch_builds.yml
+
+  vita-build:
+    name: 🌱 PSVita
+    needs: static-checks
+    uses: ./.github/workflows/vita_builds.yml

@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  ip_unix.h                                                             */
+/*  audio_driver_vita.h                                                   */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,27 +28,58 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef IP_UNIX_H
-#define IP_UNIX_H
+#ifndef AUDIO_DRIVER_VITA_H
+#define AUDIO_DRIVER_VITA_H
 
-#include "core/io/ip.h"
+#include "servers/audio_server.h"
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HOMEBREW_ENABLED)
+#include <psp2/audioout.h>
 
-class IP_Unix : public IP {
-	GDCLASS(IP_Unix, IP);
+#include "core/os/mutex.h"
+#include "core/os/thread.h"
 
-	virtual void _resolve_hostname(List<IP_Address> &r_addresses, const String &p_hostname, Type p_type = TYPE_ANY) const;
+class AudioDriverVita : public AudioDriver {
+	Thread thread;
+	Mutex mutex;
 
-	static IP *_create_unix();
+	unsigned int buffer_size;
+	Vector<int32_t> samples_in;
+	Vector<int16_t> samples_out;
+
+	String device_name;
+	String new_device;
+
+	Error init_device();
+	void finish_device();
+
+	static void thread_func(void *p_udata);
+
+	unsigned int mix_rate;
+	SpeakerMode speaker_mode;
+	int channels;
+
+	bool active;
+	bool thread_exited;
+	mutable bool exit_thread;
 
 public:
-	virtual void get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const;
+	const char *get_name() const {
+		return "Vita";
+	};
 
-	static void make_default();
-	IP_Unix();
+	virtual Error init();
+	virtual void start();
+	virtual int get_mix_rate() const;
+	virtual SpeakerMode get_speaker_mode() const;
+	virtual Array get_device_list();
+	virtual String get_device();
+	virtual void set_device(String device);
+	virtual void lock();
+	virtual void unlock();
+	virtual void finish();
+
+	AudioDriverVita();
+	~AudioDriverVita();
 };
 
-#endif
-
-#endif // IP_UNIX_H
+#endif // AUDIO_DRIVER_VITA_H
