@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  ip_unix.h                                                             */
+/*  context_egl_vita.h                                                    */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,27 +28,52 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef IP_UNIX_H
-#define IP_UNIX_H
+#ifndef CONTEXT_EGL_VITA_H
+#define CONTEXT_EGL_VITA_H
 
-#include "core/io/ip.h"
+#include "core/os/os.h"
+#include <psp2/kernel/modulemgr.h>
+#include <psp2/sysmodule.h>
+#include <psp2/types.h>
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HOMEBREW_ENABLED)
+#include <EGL/egl.h> // EGL library
 
-class IP_Unix : public IP {
-	GDCLASS(IP_Unix, IP);
+extern "C" {
+#include <gpu_es4/psp2_pvr_hint.h>
+}
 
-	virtual void _resolve_hostname(List<IP_Address> &r_addresses, const String &p_hostname, Type p_type = TYPE_ANY) const;
+class ContextEGL_Vita {
+	Psp2NativeWindow window;
 
-	static IP *_create_unix();
+	EGLDisplay display;
+	EGLContext context;
+	EGLSurface surface;
+
+	EGLint width;
+	EGLint height;
+
+	bool vsync;
+	bool gles2_context;
 
 public:
-	virtual void get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const;
+	void release_current();
 
-	static void make_default();
-	IP_Unix();
+	void make_current();
+
+	int get_window_width();
+	int get_window_height();
+	void swap_buffers();
+
+	void set_use_vsync(bool use) { vsync = use; }
+	bool is_using_vsync() const { return vsync; }
+
+	Error initialize();
+	void reset();
+
+	void cleanup();
+
+	ContextEGL_Vita(bool gles2);
+	~ContextEGL_Vita();
 };
 
-#endif
-
-#endif // IP_UNIX_H
+#endif // CONTEXT_EGL_VITA_H
