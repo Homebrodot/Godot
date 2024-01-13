@@ -28,10 +28,10 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "audio_driver_switch.h"
 #include "context_gl_switch_egl.h"
 #include "core/os/input.h"
 #include "core/os/os.h"
+#include "drivers/audren/audio_driver_audren.h"
 #include "joypad_switch.h"
 #include "main/input_default.h"
 #include "power_switch.h"
@@ -46,7 +46,7 @@ class OS_Switch : public OS {
 	PowerSwitch *power_manager;
 	ContextGLSwitchEGL *gl_context;
 	JoypadSwitch *joypad;
-	AudioDriverSwitch driver_switch;
+	AudioDriverAudren driver_audren;
 	String switch_execpath;
 
 	SwkbdInline inline_keyboard;

@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  audio_driver_switch.h                                                 */
+/*  audio_driver_audren.h                                                 */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,13 +28,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#pragma once
+#ifndef AUDIO_DRIVER_AUDREN_H
+#define AUDIO_DRIVER_AUDREN_H
+
 #include "servers/audio_server.h"
 #include "switch_wrapper.h"
 
 #include "core/os/mutex.h"
 #include "core/os/thread.h"
 
-class AudioDriverSwitch : public AudioDriver {
+class AudioDriverAudren : public AudioDriver {
 	Thread thread;
 	Mutex mutex;
 
@@ -79,6 +83,8 @@ public:
 	virtual void unlock();
 	virtual void finish();
 
-	AudioDriverSwitch();
-	~AudioDriverSwitch();
+	AudioDriverAudren();
+	~AudioDriverAudren();
 };
+
+#endif // !AUDIO_DRIVER_AUDREN_H
