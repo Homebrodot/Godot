@@ -10,6 +10,8 @@ SConscript("windows/SCsub")
 
 # Sounds drivers
 SConscript("alsa/SCsub")
+if env["platform"] == "switch":
+    SConscript("audren/SCsub")
 SConscript("coreaudio/SCsub")
 SConscript("pulseaudio/SCsub")
 if env["platform"] == "windows":

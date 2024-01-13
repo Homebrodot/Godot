@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  audio_driver_switch.cpp                                               */
+/*  audio_driver_audren.cpp                                               */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,7 +28,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "audio_driver_switch.h"
+#include "audio_driver_audren.h"
 
 #include "core/os/os.h"
 #include "core/project_settings.h"
@@ -45,7 +45,7 @@ static const AudioRendererConfig arConfig = {
 	.num_mix_buffers = 2,
 };
 
-Error AudioDriverSwitch::init_device() {
+Error AudioDriverAudren::init_device() {
 	int latency = GLOBAL_GET("audio/output_latency");
 	mix_rate = GLOBAL_GET("audio/mix_rate");
 	channels = 2;
@@ -98,21 +98,21 @@ Error AudioDriverSwitch::init_device() {
 	return OK;
 }
 
-Error AudioDriverSwitch::init() {
+Error AudioDriverAudren::init() {
 	active = false;
 	thread_exited = false;
 	exit_thread = false;
 
 	Error err = init_device();
 	if (err == OK) {
-		thread.start(AudioDriverSwitch::thread_func, this);
+		thread.start(AudioDriverAudren::thread_func, this);
 	}
 
 	return err;
 }
 
-void AudioDriverSwitch::thread_func(void *p_udata) {
-	AudioDriverSwitch *ad = (AudioDriverSwitch *)p_udata;
+void AudioDriverAudren::thread_func(void *p_udata) {
+	AudioDriverAudren *ad = (AudioDriverAudren *)p_udata;
 
 	svcSetThreadPriority(CUR_THREAD_HANDLE, 0x2B);
 
@@ -168,43 +168,43 @@ void AudioDriverSwitch::thread_func(void *p_udata) {
 	ad->thread_exited = true;
 }
 
-void AudioDriverSwitch::start() {
+void AudioDriverAudren::start() {
 	active = true;
 }
 
-int AudioDriverSwitch::get_mix_rate() const {
+int AudioDriverAudren::get_mix_rate() const {
 	return mix_rate;
 }
 
-AudioDriver::SpeakerMode AudioDriverSwitch::get_speaker_mode() const {
+AudioDriver::SpeakerMode AudioDriverAudren::get_speaker_mode() const {
 	return speaker_mode;
 }
 
-Array AudioDriverSwitch::get_device_list() {
+Array AudioDriverAudren::get_device_list() {
 	Array list;
 	list.push_back("Default");
 	return list;
 }
 
-String AudioDriverSwitch::get_device() {
+String AudioDriverAudren::get_device() {
 	return device_name;
 }
 
-void AudioDriverSwitch::set_device(String device) {
+void AudioDriverAudren::set_device(String device) {
 	lock();
 	new_device = device;
 	unlock();
 }
 
-void AudioDriverSwitch::lock() {
+void AudioDriverAudren::lock() {
 	mutex.lock();
 }
 
-void AudioDriverSwitch::unlock() {
+void AudioDriverAudren::unlock() {
 	mutex.unlock();
 }
 
-void AudioDriverSwitch::finish() {
+void AudioDriverAudren::finish() {
 	exit_thread = true;
 	thread.wait_to_finish();
 
@@ -212,10 +212,10 @@ void AudioDriverSwitch::finish() {
 	audrenExit();
 }
 
-AudioDriverSwitch::AudioDriverSwitch() :
+AudioDriverAudren::AudioDriverAudren() :
 		device_name("Default"),
 		new_device("Default") {
 }
 
-AudioDriverSwitch::~AudioDriverSwitch() {
+AudioDriverAudren::~AudioDriverAudren() {
 }
