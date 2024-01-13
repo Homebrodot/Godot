@@ -29,24 +29,47 @@
 /**************************************************************************/
 
 #include "power_switch.h"
+
 #include "switch_wrapper.h"
 
 PowerSwitch::PowerSwitch() {
-	nsecs_left = 0;
-	percent_left = 0;
-	power_state = OS::PowerState::POWERSTATE_ON_BATTERY;
+	if (R_SUCCEEDED(psmInitialize())) {
+		initialized = true;
+	}
 }
 
-PowerSwitch::~PowerSwitch() {}
-
 OS::PowerState PowerSwitch::get_power_state() {
-	return power_state;
+	if (!initialized) {
+		return OS::POWERSTATE_UNKNOWN;
+	}
+
+	bool enough_power;
+	psmIsEnoughPowerSupplied(&enough_power);
+
+	if (!enough_power) {
+		return OS::PowerState::POWERSTATE_ON_BATTERY;
+	}
+
+	int percentage = PowerSwitch::get_power_percent_left();
+
+	if (percentage == 100) {
+		return OS::PowerState::POWERSTATE_CHARGED;
+	}
+
+	return OS::PowerState::POWERSTATE_CHARGING;
 }
 
 int PowerSwitch::get_power_seconds_left() {
-	return nsecs_left / 1000000;
+	WARN_PRINT("power_seconds_left is not implemented on this platform, defaulting to -1");
+	return -1;
 }
 
 int PowerSwitch::get_power_percent_left() {
-	return percent_left;
+	if (!initialized) {
+		return -1;
+	}
+
+	u32 voltage_percentage;
+	psmGetBatteryChargePercentage(&voltage_percentage);
+	return (int)voltage_percentage;
 }

@@ -29,21 +29,24 @@
 /**************************************************************************/
 
 #pragma once
+
+#ifndef POWER_SWITCH_H
+#define POWER_SWITCH_H
+
 #include "core/os/os.h"
 
 class PowerSwitch {
 private:
-	int nsecs_left;
-	int percent_left;
-	OS::PowerState power_state;
+	bool initialized = false;
 
 	bool GetPowerInfo_Switch();
 
 public:
-	PowerSwitch();
-	virtual ~PowerSwitch();
-
 	OS::PowerState get_power_state();
 	int get_power_seconds_left();
 	int get_power_percent_left();
+
+	PowerSwitch();
 };
+
+#endif // POWER_SWITCH_H
