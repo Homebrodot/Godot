@@ -14,7 +14,6 @@ concurrency:
 jobs:
   vita-template:
     runs-on: ubuntu-latest
-    # container: vitasdk/vitasdk
 
     name: Template (target=release, tools=no)
 
@@ -30,10 +29,17 @@ jobs:
       - name: Setup python and scons
         uses: ./.github/actions/godot-deps
 
-      - name: Setup PVR_PSP2
+      - name: Setup VitaSDK and PVR_PSP2
         run: |
+          sudo apt-get install cmake libarchive-tools fakeroot zip -y
+          git clone https://github.com/vitasdk/vdpm
           git clone https://github.com/isage/vita-packages-extra
-          cd vita-packages-extra/pvr_psp2
+          cd vdpm
+          ./bootstrap-vitasdk.sh
+          ./install-all.sh
+          export PATH=$VITASDK/bin:$PATH
+          vdpm vita-rss-libdl
+          cd ../vita-packages-extra/pvr_psp2
           vita-makepkg
           vdpm *-arm.tar.xz
 
