@@ -5,6 +5,7 @@ on:
 # Global Cache Settings
 env:
   GODOT_BASE_BRANCH: 3.5
+  SCONSFLAGS: verbose=yes warnings=all werror=no debug_symbols=no
   SCONS_CACHE_LIMIT: 4096
 
 jobs:
@@ -33,10 +34,12 @@ jobs:
         uses: ./.github/actions/godot-deps
 
       - name: Compilation
-        env:
-          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
-        run: |
-          scons -j2 verbose=yes warnings=all werror=no platform=switch target=release tools=no
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }}
+          platform: switch
+          target: release
+          tools: false
 
       - uses: actions/upload-artifact@v2
         with:
