@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   vita-template:
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-20.04"
     container: vitasdk/vitasdk
 
     name: Template (target=release, tools=no)
