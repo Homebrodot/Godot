@@ -14,7 +14,7 @@ concurrency:
 jobs:
   vita-template:
     runs-on: "ubuntu-20.04"
-    container: halotroop2288/vitasdk-ubuntu
+    container: halotroop2288/vitasdk-ubuntu@main
 
     name: Template (target=release, tools=no)
 
