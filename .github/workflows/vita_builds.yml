@@ -39,7 +39,6 @@ jobs:
 
       - name: Setup PVR_PSP2
         run: |
-          sudo apt-get install cmake libarchive-tools fakeroot zip -y
           git clone https://github.com/isage/vita-packages-extra
           cd vita-packages-extra/pvr_psp2
           vita-makepkg
