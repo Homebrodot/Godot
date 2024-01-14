@@ -32,7 +32,7 @@ jobs:
 
       - name: Setup PVR_PSP2
         run: |
-          sudo -u user zsh
+          su user
           git clone https://github.com/isage/vita-packages-extra
           cd vita-packages-extra/pvr_psp2
           vita-makepkg
