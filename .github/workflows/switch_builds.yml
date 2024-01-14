@@ -35,8 +35,5 @@ jobs:
           target: release
           tools: false
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}
-          path: bin/*
-          retention-days: 14
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
