@@ -14,7 +14,7 @@ concurrency:
 jobs:
   vita-template:
     runs-on: ubuntu-latest
-    container: vitasdk/vitasdk
+    # container: vitasdk/vitasdk
 
     name: Template (target=release, tools=no)
 
