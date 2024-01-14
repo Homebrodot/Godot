@@ -10,7 +10,7 @@ env:
 
 jobs:
   switch-template:
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-20.04"
     container: devkitpro/devkita64
 
     name: Template (target=release, tools=no)
