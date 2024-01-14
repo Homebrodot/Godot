@@ -15,7 +15,9 @@ concurrency:
 
 jobs:
   vita-template:
-    runs-on: "ubuntu-20.04"
+    runs-on: ubuntu-latest
+    container: vitasdk/vitasdk
+
     name: Template (target=release, tools=no)
 
     steps:
@@ -27,6 +29,7 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/*
           sudo cp -f misc/ci/sources.list /etc/apt/sources.list
           sudo apt-get update
+
       - name: Setup Godot build cache
         uses: ./.github/actions/godot-cache
         continue-on-error: true
@@ -34,19 +37,6 @@ jobs:
       - name: Setup python and scons
         uses: ./.github/actions/godot-deps
 
-      - name: Setup VitaSDK
-        run: |
-          sudo apt-get install cmake libarchive-tools fakeroot zip -y
-          git clone https://github.com/vitasdk/vdpm
-          git clone https://github.com/isage/vita-packages-extra
-          cd vdpm
-          ./bootstrap-vitasdk.sh
-          ./install-all.sh
-          export PATH=$VITASDK/bin:$PATH
-          vdpm vita-rss-libdl
-          cd ../vita-packages-extra/pvr_psp2
-          vita-makepkg
-          vdpm *-arm.tar.xz
       - name: Compilation
         uses: ./.github/actions/godot-build
         with:
