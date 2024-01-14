@@ -27,18 +27,12 @@ jobs:
           cache-name: vita-template
         continue-on-error: true
 
-      # Azure repositories are not reliable, we need to prevent Azure giving us packages.
-      - name: Make apt sources.list use the default Ubuntu repositories
-        run: |
-          sudo rm -f /etc/apt/sources.list.d/*
-          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
-          sudo apt-get update
-
       - name: Setup python and scons
         uses: ./.github/actions/godot-deps
 
       - name: Setup PVR_PSP2
         run: |
+          sudo -u user zsh
           git clone https://github.com/isage/vita-packages-extra
           cd vita-packages-extra/pvr_psp2
           vita-makepkg
