@@ -29,11 +29,8 @@ jobs:
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
 
-      - name: Install scons from pip
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install python3-pip
-          sudo python3 -m pip install scons
+      - name: Setup python and scons
+        uses: ./.github/actions/godot-deps
 
       - name: Compilation
         env:
