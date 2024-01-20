@@ -456,10 +456,9 @@ void OS_Switch::run() {
 			}
 		}
 
+        swkbdInlineUpdate(&inline_keyboard, NULL);
 		joypad->process();
 		input->flush_buffered_events();
-
-		swkbdInlineUpdate(&inline_keyboard, NULL);
 
 		if (Main::iteration())
 			break;
@@ -478,15 +477,15 @@ bool OS_Switch::has_virtual_keyboard() const {
 }
 
 int OS_Switch::get_virtual_keyboard_height() const {
-	// todo: actually figure this out
 	if (!g_swkbd_open) {
 		return 0;
 	}
-	return 300;
+	return 400;
 }
 
-void OS_Switch::show_virtual_keyboard(const String &p_existing_text, const Rect2 &p_screen_rect, int p_max_input_length) {
-	if (!g_swkbd_open) {
+void OS_Switch::show_virtual_keyboard(const String &p_existing_text, const Rect2 &p_screen_rect, bool p_multiline, int p_max_input_length, int p_cursor_start, int p_cursor_end) {
+	printf("Showing kbd!\n");
+    if (!g_swkbd_open) {
 		g_swkbd_open = true;
 
 		SwkbdAppearArg appear_arg;
@@ -501,7 +500,6 @@ void OS_Switch::show_virtual_keyboard(const String &p_existing_text, const Rect2
 }
 
 void OS_Switch::hide_virtual_keyboard() {
-	printf("Hiding kbd!\n");
 	g_swkbd_open = false;
 	swkbdInlineDisappear(&inline_keyboard);
 }
