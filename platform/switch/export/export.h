@@ -28,6 +28,11 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#ifndef SWITCH_EXPORT_H
+#define SWITCH_EXPORT_H
+
+#ifndef MODULE_MONO_ENABLED
+
 #include "thirdparty/libnx/nacp.h"
 #include "thirdparty/libnx/nro.h"
 #include <cstring>
@@ -38,3 +43,7 @@ unsigned char *read_bytes(const char *fn, size_t off, size_t len);
 size_t write_bytes(const char *fn, size_t off, size_t len, const unsigned char *data);
 
 void register_switch_exporter();
+
+#endif // !MODULE_MONO_ENABLED
+
+#endif // !SWITCH_EXPORT_H
