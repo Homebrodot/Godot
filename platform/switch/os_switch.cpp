@@ -459,7 +459,7 @@ void OS_Switch::run() {
 		joypad->process();
 		input->flush_buffered_events();
         
-        swkbdInlineUpdate(&inline_keyboard, NULL);
+		swkbdInlineUpdate(&inline_keyboard, NULL);
 
 		if (Main::iteration())
 			break;
