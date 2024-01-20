@@ -456,9 +456,10 @@ void OS_Switch::run() {
 			}
 		}
 
-        swkbdInlineUpdate(&inline_keyboard, NULL);
 		joypad->process();
 		input->flush_buffered_events();
+        
+        swkbdInlineUpdate(&inline_keyboard, NULL);
 
 		if (Main::iteration())
 			break;
