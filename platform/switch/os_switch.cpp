@@ -458,7 +458,7 @@ void OS_Switch::run() {
 
 		joypad->process();
 		input->flush_buffered_events();
-        
+
 		swkbdInlineUpdate(&inline_keyboard, NULL);
 
 		if (Main::iteration())
@@ -485,7 +485,6 @@ int OS_Switch::get_virtual_keyboard_height() const {
 }
 
 void OS_Switch::show_virtual_keyboard(const String &p_existing_text, const Rect2 &p_screen_rect, bool p_multiline, int p_max_input_length, int p_cursor_start, int p_cursor_end) {
-	printf("Showing kbd!\n");
     if (!g_swkbd_open) {
 		g_swkbd_open = true;
 
