@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="NintendoSwitch" inherits="Object" version="3.5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		Singleton that adds new functions specific to Nintendo Switch's Horizon OS.
+	</brief_description>
+	<description>
+		The NintendoSwitch singleton is implemented only in the Nintendo Switch export. It's used to access features that are only supported by Horizon OS.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="show_virtual_keyboard">
+			<return type="void" />
+			<argument index="0" name="existing_text" type="String" default="&quot;&quot;" />
+			<argument index="1" name="type" type="int" enum="NintendoSwitch.SoftwareKeyboardType" default="0" />
+			<description>
+				Shows the virtual keyboard of the type specified.
+				The [code]existing_text[/code] parameter is useful for implementing your own [LineEdit] or [TextEdit], as it tells the virtual keyboard what text has already been typed.
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="NORMAL_KEYBOARD" value="0" enum="SoftwareKeyboardType">
+			Normal keyboard.
+		</constant>
+		<constant name="NUMPAD_KEYBOARD" value="1" enum="SoftwareKeyboardType">
+			Number pad.
+		</constant>
+		<constant name="QWERTY_KEYBOARD" value="2" enum="SoftwareKeyboardType">
+			QWERTY (and variants) keyboard only.
+		</constant>
+		<constant name="LATIN_KEYBOARD" value="4" enum="SoftwareKeyboardType">
+			All Latin like languages keyboard only (without CJK keyboard).
+		</constant>
+		<constant name="SIMPLIFIED_CHINESE_KEYBOARD" value="5" enum="SoftwareKeyboardType">
+			Chinese Simplified keyboard only.
+		</constant>
+		<constant name="TRADITIONAL_CHINESE_KEYBOARD" value="6" enum="SoftwareKeyboardType">
+			Chinese Traditional keyboard only.
+		</constant>
+		<constant name="KOREAN_KEYBOARD" value="7" enum="SoftwareKeyboardType">
+			Korean keyboard only.
+		</constant>
+		<constant name="ALL_LANGUAGES_KEYBOARD" value="8" enum="SoftwareKeyboardType">
+			All language keyboards.
+		</constant>
+	</constants>
+</class>
