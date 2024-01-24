@@ -34,7 +34,6 @@
 #include "drivers/audren/audio_driver_audren.h"
 #include "joypad_switch.h"
 #include "main/input_default.h"
-#include "power_switch.h"
 #include "servers/visual/visual_server_raster.h"
 
 class OS_Switch : public OS {
@@ -43,13 +42,14 @@ class OS_Switch : public OS {
 	VideoMode current_videomode;
 	VisualServer *visual_server;
 	InputDefault *input;
-	PowerSwitch *power_manager;
 	ContextGLSwitchEGL *gl_context;
 	JoypadSwitch *joypad;
 	AudioDriverAudren driver_audren;
 	String switch_execpath;
 
 	SwkbdInline inline_keyboard;
+
+	bool psm_initialized = false;
 
 protected:
 	virtual void initialize_core();
