@@ -170,7 +170,9 @@ Error OS_Switch::initialize(const VideoMode &p_desired, int p_video_driver, int 
 	}
 	joypad = memnew(JoypadSwitch(input));
 
-	power_manager = memnew(PowerSwitch);
+	if (R_SUCCEEDED(psmInitialize())) {
+		OS_Switch::psm_initialized = true;
+	}
 
 	AudioDriverManager::initialize(p_audio_driver);
 
@@ -195,8 +197,8 @@ void OS_Switch::finalize() {
 	memdelete(joypad);
 	visual_server->finish();
 	memdelete(visual_server);
-	memdelete(power_manager);
 	memdelete(gl_context);
+	psmExit();
 }
 
 void OS_Switch::finalize_core() {
@@ -505,15 +507,39 @@ void OS_Switch::hide_virtual_keyboard() {
 }
 
 OS::PowerState OS_Switch::get_power_state() {
-	return power_manager->get_power_state();
+	if (!OS_Switch::psm_initialized) {
+		return OS::POWERSTATE_UNKNOWN;
+	}
+
+	bool enough_power;
+	psmIsEnoughPowerSupplied(&enough_power);
+
+	if (!enough_power) {
+		return OS::PowerState::POWERSTATE_ON_BATTERY;
+	}
+
+	int percentage = OS_Switch::get_power_percent_left();
+
+	if (percentage == 100) {
+		return OS::PowerState::POWERSTATE_CHARGED;
+	}
+
+	return OS::PowerState::POWERSTATE_CHARGING;
 }
 
 int OS_Switch::get_power_seconds_left() {
-	return power_manager->get_power_seconds_left();
+	WARN_PRINT("power_seconds_left is not implemented on this platform, defaulting to -1");
+	return -1;
 }
 
 int OS_Switch::get_power_percent_left() {
-	return power_manager->get_power_percent_left();
+	if (!OS_Switch::psm_initialized) {
+		return -1;
+	}
+
+	u32 voltage_percentage;
+	psmGetBatteryChargePercentage(&voltage_percentage);
+	return (int)voltage_percentage;
 }
 
 String OS_Switch::get_executable_path() const {
@@ -554,8 +580,8 @@ OS_Switch::OS_Switch() {
 	main_loop = nullptr;
 	visual_server = nullptr;
 	input = nullptr;
-	power_manager = nullptr;
 	gl_context = nullptr;
+
 	AudioDriverManager::add_driver(&driver_audren);
 
 	swkbdInlineCreate(&inline_keyboard);
