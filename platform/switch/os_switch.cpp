@@ -512,10 +512,10 @@ void OS_Switch::run() {
 
 				last_touch_count = touch_state.count;
 			}
-		}
 
-		joypad->process();
-		input->flush_buffered_events();
+			joypad->process();
+			input->flush_buffered_events();
+		}
 
 		swkbdInlineUpdate(&inline_keyboard, NULL);
 
