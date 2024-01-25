@@ -36,6 +36,8 @@
 #include "main/input_default.h"
 #include "servers/visual/visual_server_raster.h"
 
+#include <time.h>
+
 class OS_Switch : public OS {
 	int video_driver_index;
 	MainLoop *main_loop;
@@ -92,8 +94,8 @@ public:
 	virtual bool set_environment(const String &p_var, const String &p_value) const;
 	virtual String get_name() const;
 	virtual MainLoop *get_main_loop() const;
-	virtual Date get_date(bool local = false) const;
-	virtual Time get_time(bool local = false) const;
+	virtual Date get_date(bool utc = false) const;
+	virtual Time get_time(bool utc = false) const;
 	virtual TimeZoneInfo get_time_zone_info() const;
 	virtual void delay_usec(uint32_t p_usec) const;
 	virtual uint64_t get_ticks_usec() const;

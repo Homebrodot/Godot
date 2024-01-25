@@ -176,8 +176,6 @@ Error OS_Switch::initialize(const VideoMode &p_desired, int p_video_driver, int 
 
 	AudioDriverManager::initialize(p_audio_driver);
 
-	//_ensure_user_data_dir();
-
 	return OK;
 }
 
@@ -305,16 +303,72 @@ MainLoop *OS_Switch::get_main_loop() const {
 	return main_loop;
 }
 
-OS::Date OS_Switch::get_date(bool local) const {
-	return OS::Date();
+/// From os_unix.cpp
+OS::Date OS_Switch::get_date(bool utc) const {
+	time_t t = time(nullptr);
+	struct tm lt;
+	if (utc) {
+		gmtime_r(&t, &lt);
+	} else {
+		localtime_r(&t, &lt);
+	}
+	Date ret;
+	ret.year = 1900 + lt.tm_year;
+	// Index starting at 1 to match OS_Unix::get_date
+	//   and Windows SYSTEMTIME and tm_mon follows the typical structure
+	//   of 0-11, noted here: http://www.cplusplus.com/reference/ctime/tm/
+	ret.month = (Month)(lt.tm_mon + 1);
+	ret.day = lt.tm_mday;
+	ret.weekday = (Weekday)lt.tm_wday;
+	ret.dst = lt.tm_isdst;
+
+	return ret;
 }
 
-OS::Time OS_Switch::get_time(bool local) const {
-	return OS::Time();
+/// From os_unix.cpp
+OS::Time OS_Switch::get_time(bool utc) const {
+	time_t t = time(nullptr);
+	struct tm lt;
+	if (utc) {
+		gmtime_r(&t, &lt);
+	} else {
+		localtime_r(&t, &lt);
+	}
+	Time ret;
+	ret.hour = lt.tm_hour;
+	ret.min = lt.tm_min;
+	ret.sec = lt.tm_sec;
+	get_time_zone_info();
+	return ret;
 }
 
+/// From os_unix.cpp
 OS::TimeZoneInfo OS_Switch::get_time_zone_info() const {
-	return OS::TimeZoneInfo();
+	time_t t = time(nullptr);
+	struct tm lt;
+	localtime_r(&t, &lt);
+	char name[16];
+	strftime(name, 16, "%Z", &lt);
+	name[15] = 0;
+	TimeZoneInfo ret;
+	ret.name = name;
+
+	char bias_buf[16];
+	strftime(bias_buf, 16, "%z", &lt);
+	int bias;
+	bias_buf[15] = 0;
+	sscanf(bias_buf, "%d", &bias);
+
+	// convert from ISO 8601 (1 minute=1, 1 hour=100) to minutes
+	int hour = (int)bias / 100;
+	int minutes = bias % 100;
+	if (bias < 0) {
+		ret.bias = hour * 60 - minutes;
+	} else {
+		ret.bias = hour * 60 + minutes;
+	}
+
+	return ret;
 }
 
 void OS_Switch::delay_usec(uint32_t p_usec) const {
@@ -385,7 +439,7 @@ void OS_Switch::key(uint32_t p_key, bool p_pressed) {
 
 void OS_Switch::run() {
 	if (!main_loop) {
-		TRACE("no main loop???\n");
+		TRACE("No main loop?\n");
 		return;
 	}
 
