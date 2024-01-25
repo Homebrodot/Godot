@@ -77,13 +77,13 @@ void OS_Switch::initialize_core() {
 }
 
 void OS_Switch::swap_buffers() {
-#if defined(OPENGL_ENABLED)
+#ifdef OPENGL_ENABLED
 	gl_context->swap_buffers();
 #endif
 }
 
 Error OS_Switch::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
-#if defined(OPENGL_ENABLED)
+#ifdef OPENGL_ENABLED
 	bool gles3_context = true;
 	if (p_video_driver == VIDEO_DRIVER_GLES2) {
 		gles3_context = false;
@@ -144,8 +144,8 @@ Error OS_Switch::initialize(const VideoMode &p_desired, int p_video_driver, int 
 	}
 
 	if (gl_initialization_error) {
-		OS::get_singleton()->alert("Your video card driver does not support any of the supported OpenGL versions.\n"
-								   "Please update your drivers or if you have a very old or integrated GPU upgrade it.",
+		OS::get_singleton()->alert("Your firmware does not support any of the supported OpenGL versions.\n"
+								   "Please update your custom firmware to install the latest OpenGL driver.",
 				"Unable to initialize Video driver");
 		return ERR_UNAVAILABLE;
 	}
@@ -213,7 +213,9 @@ bool OS_Switch::_check_internal_feature_support(const String &p_feature) {
 }
 
 void OS_Switch::alert(const String &p_alert, const String &p_title) {
-	printf("got alert %ls", p_alert.c_str());
+	ErrorApplicationConfig config;
+	errorApplicationCreate(&config, p_title.utf8().ptr(), p_alert.utf8().ptr());
+	errorApplicationShow(&config);
 }
 String OS_Switch::get_stdin_string(bool p_block) {
 	return "";
