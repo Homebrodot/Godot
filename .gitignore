@@ -371,6 +371,5 @@ templates/
 
 # Switch
 *.nro
-*.nacp
-/switch/
-/config/nx-hbmenu/
+switch/
+config/nx-hbmenu/
