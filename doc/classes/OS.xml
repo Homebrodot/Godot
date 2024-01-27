@@ -1019,7 +1019,7 @@
 				Shows the virtual keyboard if the platform has one.
 				The [code]existing_text[/code] parameter is useful for implementing your own [LineEdit] or [TextEdit], as it tells the virtual keyboard what text has already been typed (the virtual keyboard uses it for auto-correct and predictions).
 				The [code]multiline[/code] parameter needs to be set to [code]true[/code] to be able to enter multiple lines of text, as in [TextEdit].
-				[b]Note:[/b] This method is implemented on Android, iOS, UWP, Nintendo Switch, and PlayStation Vita.
+				[b]Note:[/b] This method is implemented on Android, iOS and UWP.
 			</description>
 		</method>
 	</methods>
