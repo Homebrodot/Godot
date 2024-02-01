@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/c08oprkiua/godot-wii-u
+	branch = main
+	commit = 1b5c230ac9fda518cb0152dd487a0b2273e595c9
+	parent = c7fb0645af400a1859154bcee9394e63bdabd198
+	method = merge
+	cmdver = 0.4.6
