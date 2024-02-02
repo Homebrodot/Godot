@@ -35,7 +35,7 @@
 extern "C" {
 #endif
 
-#if defined(_WIN32) || defined(__ANDROID__)
+#if defined(_WIN32) || defined(__ANDROID__) || defined(__SWITCH__)
 #define GDCALLINGCONV
 #define GDAPI GDCALLINGCONV
 #elif defined(__APPLE__)
@@ -47,7 +47,7 @@ extern "C" {
 #define GDCALLINGCONV __attribute__((sysv_abi))
 #define GDAPI GDCALLINGCONV
 #endif
-#else // !_WIN32 && !__APPLE__
+#else // !_WIN32 && !__APPLE__ && !__SWITCH__
 #define GDCALLINGCONV __attribute__((sysv_abi))
 #define GDAPI GDCALLINGCONV
 #endif

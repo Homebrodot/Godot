@@ -30,7 +30,7 @@
 
 #include "ip_unix.h"
 
-#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED)
+#if defined(UNIX_ENABLED) || defined(WINDOWS_ENABLED) || defined(HORIZON_ENABLED)
 
 #include <string.h>
 
@@ -53,7 +53,9 @@
 #ifdef __FreeBSD__
 #include <sys/types.h>
 #endif
+#ifndef HORIZON_ENABLED
 #include <ifaddrs.h>
+#endif
 #endif
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -210,7 +212,12 @@ void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) co
 #else // UNIX
 
 void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) const {
+#ifdef HORIZON_ENABLED
 	struct ifaddrs *ifAddrStruct = nullptr;
+	struct ifaddrs *ifa = nullptr;
+	// todo: nifm
+#else // HORIZON_ENABLED
+    struct ifaddrs *ifAddrStruct = nullptr;
 	struct ifaddrs *ifa = nullptr;
 	int family;
 
@@ -244,6 +251,7 @@ void IP_Unix::get_local_interfaces(Map<String, Interface_Info> *r_interfaces) co
 	if (ifAddrStruct != nullptr) {
 		freeifaddrs(ifAddrStruct);
 	}
+#endif // !HORIZON_ENABLED
 }
 #endif
 
