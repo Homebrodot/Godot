@@ -51,7 +51,7 @@ tar cz godot-switch-v${version_number}-linux > godot-v${version_number}-linux-sw
 
 mkdir templates
 cp ${godot_dir}/switch-template/switch_release.nro templates/switch_release.nro
-cp platform/switch/romfs/applet_splash.rgba.gz templates/switch_applet_splash.rgba.gz
+cp ${godot_dir}/platform/switch/romfs/applet_splash.rgba.gz templates/switch_applet_splash.rgba.gz
 echo $template_version > templates/version.txt
 zip -r godot_template-v${version_number}-switch_only.tpz templates
 
@@ -59,13 +59,12 @@ mkdir -p switch/godot config/nx-hbmenu/fileassoc
 # todo: always get latest
 wget https://github.com/Stary2001/godot-forwarder/releases/download/v0.2/godot-forwarder.nro -O switch/godot/godot-forwarder.nro
 cp ${godot_dir}/switch-template/switch_release.nro switch/godot/godot-${version_number}.nro
-cp platform/switch/godot.cfg config/nx-hbmenu/fileassoc/godot.cfg
+cp ${godot_dir}/platform/switch/godot.cfg config/nx-hbmenu/fileassoc/godot.cfg
 zip -r godot-v${version_number}-switch.zip switch config
 
 mv godot.switch.opt.64 "godot-switch-v${version_number}-DEBUG_ONLY.elf"
 
 # clean up
 rm -r godot-switch-v${version_number}-windows godot-switch-v${version_number}-linux
-rm -r switch templates config switch_release.nro actions_api_response* workflows
-rm windows-editor.zip macos-editor.zip linux-editor.zip switch-template.zip
+rm -r switch templates config
 popd
