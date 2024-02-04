@@ -23,8 +23,8 @@ jobs:
           path: macos-editor
       - uses: actions/download-artifact@v3
         with:
-          name: linux-editor
-          path: linux-editor
+          name: linux-editor-mono
+          path: linux-editor-mono
       - uses: actions/download-artifact@v3
         with:
           name: switch-template

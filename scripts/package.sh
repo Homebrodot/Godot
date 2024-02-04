@@ -39,7 +39,7 @@ zip -r godot-v${version_number}-windows-switch-support.zip godot-switch-v${versi
 # repack Linux editor, also include build_romfs and nxlink
 mkdir godot-switch-v${version_number}-linux
 pushd godot-switch-v${version_number}-linux
-cp ${godot_dir}/linux-editor/godot.x11.opt.tools.64 .
+cp ${godot_dir}/linux-editor-mono/* .
 chmod +x godot.x11.opt.tools.64
 wget https://9net.org/tools/nxlink-linux -O nxlink
 wget https://9net.org/tools/build_romfs-linux -O build_romfs
