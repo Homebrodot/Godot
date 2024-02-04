@@ -8,9 +8,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v4
-        name: switch-template
+        with:
+          name: switch-template
       - uses: actions/download-artifact@v4
-        name: vita-template
+        with:
+          name: vita-template
       - name: Package
         run: |
           ls -R switch-template vita-template
