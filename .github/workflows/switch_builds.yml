@@ -39,7 +39,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=no platform=switch target=release tools=no
+          scons -j4 verbose=yes warnings=all werror=no platform=switch target=release tools=no
 
       - uses: actions/upload-artifact@v2
         with:
