@@ -10,9 +10,13 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: switch-template
+          path: switch-template
+
       - uses: actions/download-artifact@v3
         with:
           name: vita-template
+          path: switch-template
+
       - name: Package
         run: |
           ls -R switch-template vita-template
