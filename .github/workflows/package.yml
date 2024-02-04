@@ -6,17 +6,33 @@ jobs:
   package:
     runs-on: "ubuntu-22.04"
     steps:
+      - name: Ensure python
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install python3-pip
+
       - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: windows-editor
+          path: windows-editor
+      - uses: actions/download-artifact@v3
+        with:
+          name: macos-editor
+          path: macos-editor
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-editor
+          path: linux-editor
       - uses: actions/download-artifact@v3
         with:
           name: switch-template
           path: switch-template
-
       - uses: actions/download-artifact@v3
         with:
           name: vita-template
-          path: switch-template
+          path: vita-template
 
       - name: Package
-        run: |
-          ls -R switch-template vita-template
+        run: scripts/package.sh
