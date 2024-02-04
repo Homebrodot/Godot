@@ -41,7 +41,7 @@ jobs:
         run: |
           scons -j4 verbose=yes warnings=all werror=no platform=switch target=release tools=no
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
           path: bin/*
