@@ -68,3 +68,6 @@ mv godot.switch.opt.64 "godot-switch-v${version_number}-DEBUG_ONLY.elf"
 rm -r godot-switch-v${version_number}-windows godot-switch-v${version_number}-linux
 rm -r switch templates config
 popd
+
+mkdir artifacts
+cp $tmpdir/godot-v${version_number}-windows-switch-support.zip $tmpdir/godot-v${version_number}-linux-switch-support.tar.gz $tmpdir/godot_template-v${version_number}-switch_only.tpz $tmpdir/godot-v${version_number}-switch.zip artifacts/

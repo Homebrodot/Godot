@@ -36,3 +36,8 @@ jobs:
 
       - name: Package
         run: scripts/package.sh
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: package
+          path: artifacts/*
