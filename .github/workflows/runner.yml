@@ -57,5 +57,5 @@ jobs:
 
   package:
     name: Package
-    needs: switch-build vita-build
+    needs: [switch-build, vita-build]
     uses: ./.github/workflows/package.yml
