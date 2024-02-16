@@ -209,6 +209,9 @@ bool OS_Switch::_check_internal_feature_support(const String &p_feature) {
 		//TODO support etc2 only if GLES3 driver is selected
 		return true;
 	}
+	if (p_feature == "arm64-v8a") {
+		return true;
+	}
 	return false;
 }
 
