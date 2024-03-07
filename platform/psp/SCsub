@@ -25,7 +25,11 @@ env.Command(
 )
 
 env.Command(
-	"#bin/EBOOT.PBP", "#bin/strip2.elf" ,"pack-pbp bin/EBOOT.PBP PARAM.SFO NULL          NULL NULL NULL          NULL  bin/strip2.elf NULL"
+	"#bin/PARAM.SFO", "", "mksfoex -d MEMSIZE=1 Godot bin/PARAM.SFO"
+)
+
+env.Command(
+	"#bin/EBOOT.PBP", "#bin/strip2.elf" ,"pack-pbp bin/EBOOT.PBP bin/PARAM.SFO NULL          NULL NULL NULL          NULL  bin/strip2.elf NULL"
 )
 
 
