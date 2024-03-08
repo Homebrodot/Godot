@@ -334,9 +334,6 @@ void OS_PSP::process_keys() {
 
 	input->joy_axis(0, 0, 0, lx);
 	input->joy_axis(0, 0, 1, ly);
-
-	if(pad.Buttons & PSP_CTRL_HOME)
-		sceKernelExitGame();
 }
 
 void OS_PSP::delete_main_loop() {
@@ -371,6 +368,32 @@ void OS_PSP::set_cursor_shape(CursorShape p_shape) {
 void OS_PSP::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {
 }
 
+// Standard callback functions
+/* Exit callback */
+int exit_callback(int arg1, int arg2, void *common) {
+	sceKernelExitGame();
+	return 0;
+}
+
+/* Callback thread */
+int CallbackThread(SceSize args, void *argp) {
+	int cbid;
+	cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
+	sceKernelRegisterExitCallback(cbid);
+	sceKernelSleepThreadCB();
+	return 0;
+}
+
+/* Sets up the callback thread and returns its thread id */
+int SetupCallbacks(void) {
+	int thid = 0;
+	thid = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
+	if(thid >= 0) {
+		sceKernelStartThread(thid, 0, 0);
+	}
+	return thid;
+} 
+
 void OS_PSP::run() {
 
 	force_quit = false;
@@ -379,6 +402,7 @@ void OS_PSP::run() {
 		return;
 
 	main_loop->init();
+	SetupCallbacks();
 
 	while (!force_quit) {
 
