@@ -56,7 +56,7 @@ Error AudioDriverPSP::init() {
 	samples_out = memnew_arr(int16_t, buffer_size*channels);
 	
 	pspAudioInit();
-	pspAudioSetChannelCallback(0, fill_audio, (void*)this);
+	pspAudioSetChannelCallback(0, thread_func, (void*)this);
 
 	return OK;
 };
