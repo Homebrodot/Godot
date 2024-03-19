@@ -54,63 +54,31 @@ Error AudioDriverPSP::init() {
 
 	samples_in = memnew_arr(int32_t, buffer_size*channels);
 	samples_out = memnew_arr(int16_t, buffer_size*channels);
-
-	// channel_num = sceAudioChReserve(1, PSP_AUDIO_SAMPLE_ALIGN(buffer_size*channels), PSP_AUDIO_FORMAT_MONO);
-	sceAudioOutput2Reserve(buffer_size);
-
-	mutex = Mutex::create();
-	thread = Thread::create(AudioDriverPSP::thread_func, this);
-
+	
+	pspAudioInit();
+	pspAudioSetChannelCallback(0, thread_func, (void*)this);
 
 	return OK;
 };
 
-void AudioDriverPSP::thread_func(void *p_udata) {
-
-	int buffer_index = 0;
-	printf("out\n");
- 	AudioDriverPSP* ad = (AudioDriverPSP*)p_udata;
-
-	int sample_count = ad->buffer_size ;
-	uint64_t usdelay = (ad->buffer_size / float(ad->mix_rate)) * 1000000;
-
- 	while (!ad->exit_thread) {
-
-
- 		if (ad->exit_thread)
- 			break;
-#ifndef PPSSPP
-		while(sceAudioWaitInputEnd()) {
-			OS::get_singleton()->delay_usec(usdelay);
-		}
-#endif
-		if (ad->active) {
-			ad->lock();
-
-			ad->audio_server_process(ad->buffer_size, ad->samples_in);
-
-			ad->unlock();
-
-			for(int i = 0; i < sample_count*2; ++i) {
-				ad->samples_out[i] = ad->samples_in[i] >> 16;
-			}
-
-
-		} else
-		{
-			for (int i = 0; i < sample_count*2; i++) {
-
-				ad->samples_out[i] = 0;
-			}
-		}
-// #ifdef PPSSPP
-// 		OS::get_singleton()->delay_usec(usdelay);
-// #endif
-		sceAudioOutput2OutputBlocking(0x8000, ad->samples_out);
+void AudioDriverPSP::thread_func(void *udata, unsigned int numSamples, void *userdata)
+{
+	AudioDriverPSP* ad = (AudioDriverPSP*)userdata;
+	if (ad->active) {
+		ad->lock();
+		ad->audio_server_process(numSamples, ad->samples_in);
+		ad->unlock();
+		short * _buf = (short *) udata;
+		unsigned int count;
+		for (count = 0; count < numSamples * 2; count++)
+	    		*(_buf + count) = (ad->samples_in[count] >> 16) * 0.9;
+	} else
+	{
+		short * _buf = (short *) udata;
+		unsigned int count;
+		for (count = 0; count < numSamples * 2; count++)
+	    		*(_buf + count) = 0;
 	}
-
-
-	ad->thread_exited=true;
 };
 
 void AudioDriverPSP::start() {
