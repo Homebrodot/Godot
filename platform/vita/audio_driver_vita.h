@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  godot.h                                                               */
+/*  audio_driver_vita.h                                                   */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -27,54 +27,59 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
-/**
- @file  godot.h
- @brief ENet Godot header
-*/
 
-#ifndef __ENET_GODOT_H__
-#define __ENET_GODOT_H__
+#ifndef AUDIO_DRIVER_VITA_H
+#define AUDIO_DRIVER_VITA_H
 
-#ifdef WINDOWS_ENABLED
-#include <stdint.h>
-#include <winsock2.h>
-#endif
-#if defined(UNIX_ENABLED) || defined(HORIZON_ENABLED)
-#include <arpa/inet.h>
-#endif
+#include "servers/audio_server.h"
 
-#ifdef MSG_MAXIOVLEN
-#define ENET_BUFFER_MAXIMUM MSG_MAXIOVLEN
-#endif
+#include <psp2/audioout.h>
 
-typedef void *ENetSocket;
+#include "core/os/mutex.h"
+#include "core/os/thread.h"
 
-#define ENET_SOCKET_NULL NULL
+class AudioDriverVita : public AudioDriver {
+	Thread thread;
+	Mutex mutex;
 
-#define ENET_HOST_TO_NET_16(value) (htons(value)) /**< macro that converts host to net byte-order of a 16-bit value */
-#define ENET_HOST_TO_NET_32(value) (htonl(value)) /**< macro that converts host to net byte-order of a 32-bit value */
+	unsigned int buffer_size;
+	Vector<int32_t> samples_in;
+	Vector<int16_t> samples_out;
 
-#define ENET_NET_TO_HOST_16(value) (ntohs(value)) /**< macro that converts net to host byte-order of a 16-bit value */
-#define ENET_NET_TO_HOST_32(value) (ntohl(value)) /**< macro that converts net to host byte-order of a 32-bit value */
+	String device_name;
+	String new_device;
 
-typedef struct
-{
-	void *data;
-	size_t dataLength;
-} ENetBuffer;
+	Error init_device();
+	void finish_device();
 
-#define ENET_CALLBACK
+	static void thread_func(void *p_udata);
 
-#define ENET_API extern
+	unsigned int mix_rate;
+	SpeakerMode speaker_mode;
+	int channels;
 
-typedef void ENetSocketSet;
+	bool active;
+	bool thread_exited;
+	mutable bool exit_thread;
 
-typedef struct _ENetAddress
-{
-   uint8_t host[16];
-   uint16_t port;
-   uint8_t wildcard;
-} ENetAddress;
-#define enet_host_equal(host_a, host_b) (memcmp(&host_a, &host_b,16) == 0)
+public:
+	const char *get_name() const {
+		return "Vita";
+	};
 
-#endif /* __ENET_GODOT_H__ */
+	virtual Error init();
+	virtual void start();
+	virtual int get_mix_rate() const;
+	virtual SpeakerMode get_speaker_mode() const;
+	virtual Array get_device_list();
+	virtual String get_device();
+	virtual void set_device(String device);
+	virtual void lock();
+	virtual void unlock();
+	virtual void finish();
+
+	AudioDriverVita();
+	~AudioDriverVita();
+};
+
+#endif // AUDIO_DRIVER_VITA_H

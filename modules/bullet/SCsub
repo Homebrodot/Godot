@@ -200,6 +200,11 @@ if env["builtin_bullet"]:
     thirdparty_sources = [thirdparty_dir + file for file in bullet2_src]
 
     env_bullet.Prepend(CPPPATH=[thirdparty_dir])
+    # Treat Bullet headers as system headers to avoid raising warnings. Not supported on MSVC. (TODO SWITCH: devkitA64 issue prevents this from working)
+    if not env.msvc and env["platform"] != "switch":
+        env_bullet.Append(CPPFLAGS=["-isystem", Dir(thirdparty_dir).path])
+    else:
+        env_bullet.Prepend(CPPPATH=[thirdparty_dir])
 
     env_bullet.Append(CPPDEFINES=["BT_USE_OLD_DAMPING_METHOD", "BT_THREADSAFE"])
 

@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  godot.h                                                               */
+/*  joypad_vita.cpp                                                       */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -27,54 +27,48 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
-/**
- @file  godot.h
- @brief ENet Godot header
-*/
 
-#ifndef __ENET_GODOT_H__
-#define __ENET_GODOT_H__
+#include "joypad_vita.h"
+#include "core/os/os.h"
+#include "core/variant.h"
 
-#ifdef WINDOWS_ENABLED
-#include <stdint.h>
-#include <winsock2.h>
-#endif
-#if defined(UNIX_ENABLED) || defined(HORIZON_ENABLED)
-#include <arpa/inet.h>
-#endif
+static const SceCtrlButtons pad_mapping[] = {
+	SCE_CTRL_CROSS, SCE_CTRL_CIRCLE, SCE_CTRL_SQUARE, SCE_CTRL_TRIANGLE,
+	SCE_CTRL_L2, SCE_CTRL_R2, SCE_CTRL_L1, SCE_CTRL_R1,
+	SCE_CTRL_L3, SCE_CTRL_R3, SCE_CTRL_SELECT, SCE_CTRL_START,
+	SCE_CTRL_UP, SCE_CTRL_DOWN, SCE_CTRL_LEFT, SCE_CTRL_RIGHT
+};
 
-#ifdef MSG_MAXIOVLEN
-#define ENET_BUFFER_MAXIMUM MSG_MAXIOVLEN
-#endif
+JoypadVita::JoypadVita(InputDefault *in) {
+	sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG_WIDE);
+	button_count = sizeof(pad_mapping) / sizeof(*pad_mapping);
+	input = in;
+	input->joy_connection_changed(0, true, "Sony PlayStation Vita", "__VITA_GAMEPAD__");
+}
 
-typedef void *ENetSocket;
+JoypadVita::~JoypadVita() {}
 
-#define ENET_SOCKET_NULL NULL
+void JoypadVita::process_joypads() {
+	static SceCtrlData old_pad_input = { 0 };
+	sceCtrlPeekBufferPositive(0, &pad_input, 1);
+	uint64_t changed;
+	float lx, ly, rx, ry;
 
-#define ENET_HOST_TO_NET_16(value) (htons(value)) /**< macro that converts host to net byte-order of a 16-bit value */
-#define ENET_HOST_TO_NET_32(value) (htonl(value)) /**< macro that converts host to net byte-order of a 32-bit value */
+	lx = ((pad_input.lx) / 255.0f) * 2.0 - 1.0;
+	ly = ((pad_input.ly) / 255.0f) * 2.0 - 1.0;
+	rx = ((pad_input.rx) / 255.0f) * 2.0 - 1.0;
+	ry = ((pad_input.ry) / 255.0f) * 2.0 - 1.0;
 
-#define ENET_NET_TO_HOST_16(value) (ntohs(value)) /**< macro that converts net to host byte-order of a 16-bit value */
-#define ENET_NET_TO_HOST_32(value) (ntohl(value)) /**< macro that converts net to host byte-order of a 32-bit value */
+	input->joy_axis(0, JOY_ANALOG_LX, lx);
+	input->joy_axis(0, JOY_ANALOG_LY, ly);
+	input->joy_axis(0, JOY_ANALOG_RX, rx);
+	input->joy_axis(0, JOY_ANALOG_RY, ry);
 
-typedef struct
-{
-	void *data;
-	size_t dataLength;
-} ENetBuffer;
-
-#define ENET_CALLBACK
-
-#define ENET_API extern
-
-typedef void ENetSocketSet;
-
-typedef struct _ENetAddress
-{
-   uint8_t host[16];
-   uint16_t port;
-   uint8_t wildcard;
-} ENetAddress;
-#define enet_host_equal(host_a, host_b) (memcmp(&host_a, &host_b,16) == 0)
-
-#endif /* __ENET_GODOT_H__ */
+	changed = old_pad_input.buttons ^ pad_input.buttons;
+	old_pad_input = pad_input;
+	if (changed) {
+		for (int i = 0; i < button_count; i++) {
+			input->joy_button(0, i, (bool)(pad_input.buttons & pad_mapping[i]));
+		}
+	}
+}

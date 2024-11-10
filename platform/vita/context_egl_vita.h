@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  godot.h                                                               */
+/*  context_egl_vita.h                                                    */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -27,54 +27,53 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
-/**
- @file  godot.h
- @brief ENet Godot header
-*/
 
-#ifndef __ENET_GODOT_H__
-#define __ENET_GODOT_H__
+#ifndef CONTEXT_EGL_VITA_H
+#define CONTEXT_EGL_VITA_H
 
-#ifdef WINDOWS_ENABLED
-#include <stdint.h>
-#include <winsock2.h>
-#endif
-#if defined(UNIX_ENABLED) || defined(HORIZON_ENABLED)
-#include <arpa/inet.h>
-#endif
+#include "core/os/os.h"
+#include <psp2/kernel/modulemgr.h>
+#include <psp2/sysmodule.h>
+#include <psp2/types.h>
 
-#ifdef MSG_MAXIOVLEN
-#define ENET_BUFFER_MAXIMUM MSG_MAXIOVLEN
-#endif
+#include <EGL/egl.h> // EGL library
 
-typedef void *ENetSocket;
+extern "C" {
+#include <gpu_es4/psp2_pvr_hint.h>
+}
 
-#define ENET_SOCKET_NULL NULL
+class ContextEGL_Vita {
+	Psp2NativeWindow window;
 
-#define ENET_HOST_TO_NET_16(value) (htons(value)) /**< macro that converts host to net byte-order of a 16-bit value */
-#define ENET_HOST_TO_NET_32(value) (htonl(value)) /**< macro that converts host to net byte-order of a 32-bit value */
+	EGLDisplay display;
+	EGLContext context;
+	EGLSurface surface;
 
-#define ENET_NET_TO_HOST_16(value) (ntohs(value)) /**< macro that converts net to host byte-order of a 16-bit value */
-#define ENET_NET_TO_HOST_32(value) (ntohl(value)) /**< macro that converts net to host byte-order of a 32-bit value */
+	EGLint width;
+	EGLint height;
 
-typedef struct
-{
-	void *data;
-	size_t dataLength;
-} ENetBuffer;
+	bool vsync;
+	bool gles2_context;
 
-#define ENET_CALLBACK
+public:
+	void release_current();
 
-#define ENET_API extern
+	void make_current();
 
-typedef void ENetSocketSet;
+	int get_window_width();
+	int get_window_height();
+	void swap_buffers();
 
-typedef struct _ENetAddress
-{
-   uint8_t host[16];
-   uint16_t port;
-   uint8_t wildcard;
-} ENetAddress;
-#define enet_host_equal(host_a, host_b) (memcmp(&host_a, &host_b,16) == 0)
+	void set_use_vsync(bool use) { vsync = use; }
+	bool is_using_vsync() const { return vsync; }
 
-#endif /* __ENET_GODOT_H__ */
+	Error initialize();
+	void reset();
+
+	void cleanup();
+
+	ContextEGL_Vita(bool gles2);
+	~ContextEGL_Vita();
+};
+
+#endif // CONTEXT_EGL_VITA_H

@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  godot.h                                                               */
+/*  godot_vita.cpp                                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -27,54 +27,62 @@
 /* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
-/**
- @file  godot.h
- @brief ENet Godot header
-*/
 
-#ifndef __ENET_GODOT_H__
-#define __ENET_GODOT_H__
+#include <limits.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-#ifdef WINDOWS_ENABLED
-#include <stdint.h>
-#include <winsock2.h>
+#include "main/main.h"
+#include "os_vita.h"
+
+#include <taihen.h>
+
+#ifndef MEMORY_GRAPHICS_MB
+#define MEMORY_GRAPHICS_MB 256 // Default Split, 256 Graphics/221 Main
 #endif
-#if defined(UNIX_ENABLED) || defined(HORIZON_ENABLED)
-#include <arpa/inet.h>
-#endif
+#define MEMORY_NEWLIB_MB (477 - MEMORY_GRAPHICS_MB)
+#define MEMORY_SCELIBC_MB 10
 
-#ifdef MSG_MAXIOVLEN
-#define ENET_BUFFER_MAXIMUM MSG_MAXIOVLEN
-#endif
+//#define DEVKIT_ENABLED 1
 
-typedef void *ENetSocket;
+int _newlib_heap_size_user = MEMORY_NEWLIB_MB * 1024 * 1024;
+unsigned int sceLibcHeapSize = MEMORY_SCELIBC_MB * 1024 * 1024;
 
-#define ENET_SOCKET_NULL NULL
+int main(int argc, char *argv[]) {
+	OS_Vita os;
+	char title_id[0xA];
+	char app_dir_path[0x100];
+	char app_kernel_module_path[0x100];
+	SceUID pid = -1;
+	sceKernelLoadStartModule("vs0:sys/external/libfios2.suprx", 0, NULL, 0, NULL, NULL);
+	sceKernelLoadStartModule("vs0:sys/external/libc.suprx", 0, NULL, 0, NULL, NULL);
 
-#define ENET_HOST_TO_NET_16(value) (htons(value)) /**< macro that converts host to net byte-order of a 16-bit value */
-#define ENET_HOST_TO_NET_32(value) (htonl(value)) /**< macro that converts host to net byte-order of a 32-bit value */
+	pid = sceKernelGetProcessId();
+	sceAppMgrAppParamGetString(pid, 12, title_id, sizeof(title_id));
+	snprintf(app_dir_path, sizeof(app_dir_path), "ux0:app/%s", title_id);
+	snprintf(app_kernel_module_path, sizeof(app_kernel_module_path), "%s/module/libgpu_es4_kernel_ext.skprx", app_dir_path);
 
-#define ENET_NET_TO_HOST_16(value) (ntohs(value)) /**< macro that converts net to host byte-order of a 16-bit value */
-#define ENET_NET_TO_HOST_32(value) (ntohl(value)) /**< macro that converts net to host byte-order of a 32-bit value */
+	SceUID res = taiLoadStartKernelModule(app_kernel_module_path, 0, NULL, 0);
+	if (res < 0) {
+		sceClibPrintf("Failed to load kernel module: %08x\n", res);
+	}
 
-typedef struct
-{
-	void *data;
-	size_t dataLength;
-} ENetBuffer;
+	scePowerSetArmClockFrequency(444);
+	scePowerSetBusClockFrequency(222);
+	scePowerSetGpuClockFrequency(222);
+	scePowerSetGpuXbarClockFrequency(166);
 
-#define ENET_CALLBACK
+	sceClibPrintf("Showing the path now UwU: %d %s\n", argc, argv[0]);
+	char *args[] = { "--path", "app0:/game_data", "--main-pack", "app0:/game_data/game.pck" };
 
-#define ENET_API extern
+	Error err = Main::setup("", sizeof(args) / sizeof(args[0]), args);
+	if (err != OK) {
+		return 255;
+	}
 
-typedef void ENetSocketSet;
-
-typedef struct _ENetAddress
-{
-   uint8_t host[16];
-   uint16_t port;
-   uint8_t wildcard;
-} ENetAddress;
-#define enet_host_equal(host_a, host_b) (memcmp(&host_a, &host_b,16) == 0)
-
-#endif /* __ENET_GODOT_H__ */
+	if (Main::start())
+		os.run(); // it is actually the OS that decides how to run
+	Main::cleanup();
+	return 0;
+}
