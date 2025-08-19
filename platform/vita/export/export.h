@@ -31,8 +31,6 @@
 #ifndef VITA_EXPORT_H
 #define VITA_EXPORT_H
 
-#ifndef MODULE_MONO_ENABLED
-
 #include "core/io/file_access_memory.h"
 #include "editor/editor_export.h"
 #include "editor/editor_node.h"
@@ -51,6 +49,4 @@ typedef struct ParamSFOStruct {
 int mksfoex(ParamSFOStruct *sfo, String outDir);
 void register_vita_exporter();
 
-#endif // !MODULE_MONO_ENABLED
-
-#endif // !VITA_EXPORT_H
+#endif // VITA_EXPORT_H

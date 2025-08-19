@@ -28,16 +28,14 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "api/switch_singleton.h"
+#include "audio_driver_switch.h"
 #include "context_gl_switch_egl.h"
 #include "core/os/input.h"
 #include "core/os/os.h"
-#include "drivers/audren/audio_driver_audren.h"
 #include "joypad_switch.h"
 #include "main/input_default.h"
+#include "power_switch.h"
 #include "servers/visual/visual_server_raster.h"
-
-#include <time.h>
 
 class OS_Switch : public OS {
 	int video_driver_index;
@@ -45,14 +43,13 @@ class OS_Switch : public OS {
 	VideoMode current_videomode;
 	VisualServer *visual_server;
 	InputDefault *input;
+	PowerSwitch *power_manager;
 	ContextGLSwitchEGL *gl_context;
 	JoypadSwitch *joypad;
-	AudioDriverAudren driver_audren;
+	AudioDriverSwitch driver_switch;
 	String switch_execpath;
 
 	SwkbdInline inline_keyboard;
-
-	bool psm_initialized = false;
 
 protected:
 	virtual void initialize_core();
@@ -95,8 +92,8 @@ public:
 	virtual bool set_environment(const String &p_var, const String &p_value) const;
 	virtual String get_name() const;
 	virtual MainLoop *get_main_loop() const;
-	virtual Date get_date(bool utc = false) const;
-	virtual Time get_time(bool utc = false) const;
+	virtual Date get_date(bool local = false) const;
+	virtual Time get_time(bool local = false) const;
 	virtual TimeZoneInfo get_time_zone_info() const;
 	virtual void delay_usec(uint32_t p_usec) const;
 	virtual uint64_t get_ticks_usec() const;
@@ -111,7 +108,7 @@ public:
 	virtual bool has_touchscreen_ui_hint() const;
 
 	virtual bool has_virtual_keyboard() const;
-	virtual void show_virtual_keyboard(const String &p_existing_text, const Rect2 &p_screen_rect = Rect2(), bool p_multiline = false, int p_max_input_length = -1, int p_cursor_start = -1, int p_cursor_end = -1);
+	virtual void show_virtual_keyboard(const String &p_existing_text, const Rect2 &p_screen_rect = Rect2(), int p_max_input_length = -1);
 	virtual void hide_virtual_keyboard();
 	virtual int get_virtual_keyboard_height() const;
 

@@ -36,13 +36,92 @@
 
 #include "core/io/packet_peer_udp.h"
 #include "core/os/file_access.h"
+#include "core/os/thread.h"
+#include "core/os/mutex.h"
 #include "editor/editor_export.h"
 #include "editor/editor_node.h"
 #include "platform/switch/logo.gen.h"
 #include "scene/resources/texture.h"
 
+#ifdef WINDOWS_ENABLED
+#include <windows.h>
+#include <process.h>
+#endif
+
 #define TEMPLATE_RELEASE "switch_release.nro"
 #define TEMPLATE_APPLET_SPLASH "switch_applet_splash.rgba.gz"
+
+// NXLink output streaming using proper stdout capture
+class NXLinkStreamThread {
+private:
+	Thread thread;
+	Mutex mutex;
+	bool running;
+	String nxlink_path;
+	List<String> nxlink_args;
+	String tmp_pack_path; // Store the path to clean up later
+	
+public:
+	NXLinkStreamThread() : running(false) {}
+	
+	void start(const String &p_nxlink_path, const List<String> &p_args, const String &p_tmp_pack_path) {
+		if (running) return;
+		
+		nxlink_path = p_nxlink_path;
+		nxlink_args = p_args;
+		tmp_pack_path = p_tmp_pack_path;
+		running = true;
+		thread.start(_thread_function, this);
+	}
+	
+	void stop() {
+		if (!running) return;
+		
+		running = false;
+		thread.wait_to_finish();
+	}
+	
+	bool is_running() const { return running; }
+	
+private:
+	static void _thread_function(void *p_userdata) {
+		NXLinkStreamThread *self = (NXLinkStreamThread *)p_userdata;
+		self->_run();
+	}
+	
+	void _run() {
+		// Build the nxlink command string
+		String command = nxlink_path;
+		for (List<String>::Element *E = nxlink_args.front(); E; E = E->next()) {
+			command += " " + E->get();
+		}
+		
+		print_line("Executing nxlink with real-time output capture...");
+		print_line("NXLink command: " + command);
+		
+		// Run nxlink directly without capturing output to avoid UI issues
+		// This will open a separate console window like command prompt
+		print_line("Starting nxlink in separate console window...");
+		print_line("Check the new console window for nxlink output");
+		
+		// Use start command to open nxlink in a new console window
+		String start_command = "start " + command;
+		int result = system(start_command.utf8().ptr());
+		
+		// Wait a moment for the console to open
+		OS::get_singleton()->delay_usec(1000000); // 1 second
+		
+		print_line("nxlink started in separate console window");
+		
+		// Clean up the temporary file
+		if (!tmp_pack_path.empty()) {
+			DirAccess::remove_file_or_error(tmp_pack_path);
+			print_line("Cleaned up temporary export file");
+		}
+		
+		print_line("=== NXLINK PROCESS COMPLETED ===");
+	}
+};
 
 class ExportPluginSwitch : public EditorExportPlugin {
 public:
@@ -68,6 +147,7 @@ class EditorExportPlatformSwitch : public EditorExportPlatform {
 	volatile bool quit_request;
 
 	ExportPluginSwitch *export_plugin;
+	NXLinkStreamThread *nxlink_thread;
 
 	static void _device_poll_thread(void *ud) {
 		EditorExportPlatformSwitch *ea = (EditorExportPlatformSwitch *)ud;
@@ -223,18 +303,27 @@ public:
 			return ERR_SKIP;
 		}
 
-		String tmp_pack_path = EditorSettings::get_singleton()->get_cache_dir().plus_file("tmpexport.pck");
+		// Export the full .nro file instead of just a .pck
+		String tmp_nro_path = EditorSettings::get_singleton()->get_cache_dir().plus_file("tmpexport.nro");
 
-		Error err = save_pack(p_preset, tmp_pack_path);
+		Error err = export_project(p_preset, true, tmp_nro_path, p_debug_flags);
 
 		if (err != OK) {
-			DirAccess::remove_file_or_error(tmp_pack_path);
+			DirAccess::remove_file_or_error(tmp_nro_path);
 			return err;
 		}
+		
+		// Verify the .nro file was created
+		if (!FileAccess::exists(tmp_nro_path)) {
+			print_line("ERROR: .nro file was not created at: " + tmp_nro_path);
+			return ERR_FILE_NOT_FOUND;
+		}
+		
+		print_line("Successfully created .nro file: " + tmp_nro_path);
 
 		print_line("Sending...");
 		if (ep.step("Sending...", 1)) {
-			DirAccess::remove_file_or_error(tmp_pack_path);
+			DirAccess::remove_file_or_error(tmp_nro_path);
 			return err;
 		}
 
@@ -249,29 +338,41 @@ public:
 		}
 
 		if (FileAccess::exists(nxlink)) {
+			// Check if nxlink is already running
+			if (nxlink_thread && nxlink_thread->is_running()) {
+				print_line("NXLink is already running. Please wait for the current session to end.");
+				return OK;
+			}
+			
 			List<String> args;
 			int ec;
+			String pipe_output;
 
-			args.push_back(tmp_pack_path);
-			args.push_back("-a");
-			args.push_back(devices[p_device]);
-			args.push_back("-p");
-			args.push_back("TempExport.pck");
-			args.push_back("--args");
+			args.push_back("-s"); // Enable server mode for real-time debugging
+			args.push_back(tmp_nro_path);
 
-			Vector<String> inner_args;
-			// todo: editor arg
-			inner_args.push_back("-v");
+			// Game arguments are not needed for nxlink - they're passed to the game itself
+			// nxlink just needs the -s flag and the nro file path
 
-			gen_export_flags(inner_args, p_debug_flags);
-			args.push_back(String(" ").join(inner_args));
-
-			OS::get_singleton()->execute(nxlink, args, true, NULL, NULL, &ec);
+			// Create and start nxlink streaming thread
+			nxlink_thread = memnew(NXLinkStreamThread);
+			print_line("Starting nxlink with remote debugging...");
+			print_line("=== NXLINK OUTPUT ===");
+			
+			nxlink_thread->start(nxlink, args, tmp_nro_path);
+			
+			// Give nxlink a moment to start
+			OS::get_singleton()->delay_usec(2000000); // 2 seconds
+			
+			print_line("=== NXLINK STREAMING STARTED ===");
+			print_line("Real-time debug output will appear below as the game runs on Switch.");
+			print_line("The nxlink stream will continue until the game exits or you close Godot.");
 		} else {
 			EditorNode::get_singleton()->show_warning(TTR("nxlink binary not found! Set its path in Editor Settings."));
 		}
 
-		DirAccess::remove_file_or_error(tmp_pack_path);
+		// Don't remove the file immediately - let nxlink use it
+		// The file will be cleaned up when the thread ends
 		return OK;
 	}
 
@@ -568,11 +669,18 @@ public:
 
 		export_plugin = memnew(ExportPluginSwitch);
 		EditorExport::get_singleton()->add_export_plugin(export_plugin);
+		nxlink_thread = nullptr;
 	}
 
 	~EditorExportPlatformSwitch() {
 		quit_request = true;
 		device_thread.wait_to_finish();
+
+		// Stop nxlink thread if running
+		if (nxlink_thread && nxlink_thread->is_running()) {
+			nxlink_thread->stop();
+			memdelete(nxlink_thread);
+		}
 
 		// DO NOT free it
 		//memdelete(export_plugin);

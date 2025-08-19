@@ -77,13 +77,13 @@ void OS_Switch::initialize_core() {
 }
 
 void OS_Switch::swap_buffers() {
-#ifdef OPENGL_ENABLED
+#if defined(OPENGL_ENABLED)
 	gl_context->swap_buffers();
 #endif
 }
 
 Error OS_Switch::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
-#ifdef OPENGL_ENABLED
+#if defined(OPENGL_ENABLED)
 	bool gles3_context = true;
 	if (p_video_driver == VIDEO_DRIVER_GLES2) {
 		gles3_context = false;
@@ -144,8 +144,8 @@ Error OS_Switch::initialize(const VideoMode &p_desired, int p_video_driver, int 
 	}
 
 	if (gl_initialization_error) {
-		OS::get_singleton()->alert("Your firmware does not support any of the supported OpenGL versions.\n"
-								   "Please update your custom firmware to install the latest OpenGL driver.",
+		OS::get_singleton()->alert("Your video card driver does not support any of the supported OpenGL versions.\n"
+								   "Please update your drivers or if you have a very old or integrated GPU upgrade it.",
 				"Unable to initialize Video driver");
 		return ERR_UNAVAILABLE;
 	}
@@ -170,11 +170,11 @@ Error OS_Switch::initialize(const VideoMode &p_desired, int p_video_driver, int 
 	}
 	joypad = memnew(JoypadSwitch(input));
 
-	if (R_SUCCEEDED(psmInitialize())) {
-		OS_Switch::psm_initialized = true;
-	}
+	power_manager = memnew(PowerSwitch);
 
 	AudioDriverManager::initialize(p_audio_driver);
+
+	//_ensure_user_data_dir();
 
 	return OK;
 }
@@ -191,14 +191,12 @@ void OS_Switch::delete_main_loop() {
 }
 
 void OS_Switch::finalize() {
-	NintendoSwitch::get_singleton()->cleanup();
-
 	memdelete(input);
 	memdelete(joypad);
 	visual_server->finish();
 	memdelete(visual_server);
+	memdelete(power_manager);
 	memdelete(gl_context);
-	psmExit();
 }
 
 void OS_Switch::finalize_core() {
@@ -209,16 +207,11 @@ bool OS_Switch::_check_internal_feature_support(const String &p_feature) {
 		//TODO support etc2 only if GLES3 driver is selected
 		return true;
 	}
-	if (p_feature == "arm64-v8a") {
-		return true;
-	}
 	return false;
 }
 
 void OS_Switch::alert(const String &p_alert, const String &p_title) {
-	ErrorApplicationConfig config;
-	errorApplicationCreate(&config, p_title.utf8().ptr(), p_alert.utf8().ptr());
-	errorApplicationShow(&config);
+	printf("got alert %ls", p_alert.c_str());
 }
 String OS_Switch::get_stdin_string(bool p_block) {
 	return "";
@@ -308,72 +301,16 @@ MainLoop *OS_Switch::get_main_loop() const {
 	return main_loop;
 }
 
-/// From os_unix.cpp
-OS::Date OS_Switch::get_date(bool utc) const {
-	time_t t = time(nullptr);
-	struct tm lt;
-	if (utc) {
-		gmtime_r(&t, &lt);
-	} else {
-		localtime_r(&t, &lt);
-	}
-	Date ret;
-	ret.year = 1900 + lt.tm_year;
-	// Index starting at 1 to match OS_Unix::get_date
-	//   and Windows SYSTEMTIME and tm_mon follows the typical structure
-	//   of 0-11, noted here: http://www.cplusplus.com/reference/ctime/tm/
-	ret.month = (Month)(lt.tm_mon + 1);
-	ret.day = lt.tm_mday;
-	ret.weekday = (Weekday)lt.tm_wday;
-	ret.dst = lt.tm_isdst;
-
-	return ret;
+OS::Date OS_Switch::get_date(bool local) const {
+	return OS::Date();
 }
 
-/// From os_unix.cpp
-OS::Time OS_Switch::get_time(bool utc) const {
-	time_t t = time(nullptr);
-	struct tm lt;
-	if (utc) {
-		gmtime_r(&t, &lt);
-	} else {
-		localtime_r(&t, &lt);
-	}
-	Time ret;
-	ret.hour = lt.tm_hour;
-	ret.min = lt.tm_min;
-	ret.sec = lt.tm_sec;
-	get_time_zone_info();
-	return ret;
+OS::Time OS_Switch::get_time(bool local) const {
+	return OS::Time();
 }
 
-/// From os_unix.cpp
 OS::TimeZoneInfo OS_Switch::get_time_zone_info() const {
-	time_t t = time(nullptr);
-	struct tm lt;
-	localtime_r(&t, &lt);
-	char name[16];
-	strftime(name, 16, "%Z", &lt);
-	name[15] = 0;
-	TimeZoneInfo ret;
-	ret.name = name;
-
-	char bias_buf[16];
-	strftime(bias_buf, 16, "%z", &lt);
-	int bias;
-	bias_buf[15] = 0;
-	sscanf(bias_buf, "%d", &bias);
-
-	// convert from ISO 8601 (1 minute=1, 1 hour=100) to minutes
-	int hour = (int)bias / 100;
-	int minutes = bias % 100;
-	if (bias < 0) {
-		ret.bias = hour * 60 - minutes;
-	} else {
-		ret.bias = hour * 60 + minutes;
-	}
-
-	return ret;
+	return OS::TimeZoneInfo();
 }
 
 void OS_Switch::delay_usec(uint32_t p_usec) const {
@@ -392,6 +329,46 @@ bool OS_Switch::can_draw() const {
 void OS_Switch::set_cursor_shape(CursorShape p_shape) {}
 void OS_Switch::set_custom_mouse_cursor(const RES &p_cursor, CursorShape p_shape, const Vector2 &p_hotspot) {}
 
+bool g_swkbd_open = false;
+int g_eat_string_events = 0;
+u32 last_len = 0;
+s32 last_cursor = 0;
+
+void keyboard_string_changed_callback(const char *str, SwkbdChangedStringArg *arg) {
+	// We get a string changed event on appear, and another one on setting text.
+	if (g_eat_string_events) {
+		last_len = arg->stringLen;
+		g_eat_string_events--;
+		return;
+	}
+
+	if (arg->stringLen < last_len) {
+		OS_Switch::get_singleton()->key(KEY_BACKSPACE, true);
+	} else if (arg->stringLen != 0) {
+		OS_Switch::get_singleton()->key(str[arg->stringLen - 1], true);
+	}
+	last_len = arg->stringLen;
+}
+
+void keyboard_moved_cursor_callback(const char *str, SwkbdMovedCursorArg *arg) {
+	if (arg->cursorPos < last_cursor) {
+		OS_Switch::get_singleton()->key(KEY_LEFT, true);
+	} else {
+		OS_Switch::get_singleton()->key(KEY_RIGHT, true);
+	}
+
+	last_cursor = arg->cursorPos;
+}
+
+void keyboard_decided_enter_callback(const char *str, SwkbdDecidedEnterArg *arg) {
+	OS_Switch::get_singleton()->key(KEY_ENTER, true);
+	g_swkbd_open = false;
+}
+
+void keyboard_decided_cancel_callback() {
+	g_swkbd_open = false;
+}
+
 void OS_Switch::key(uint32_t p_key, bool p_pressed) {
 	Ref<InputEventKey> ev;
 	ev.instance();
@@ -404,13 +381,17 @@ void OS_Switch::key(uint32_t p_key, bool p_pressed) {
 
 void OS_Switch::run() {
 	if (!main_loop) {
-		TRACE("No main loop?\n");
+		TRACE("no main loop???\n");
 		return;
 	}
 
 	main_loop->init();
 
-	NintendoSwitch::get_singleton()->initialize_software_keyboard();
+	swkbdInlineLaunchForLibraryApplet(&inline_keyboard, SwkbdInlineMode_AppletDisplay, 0);
+	swkbdInlineSetChangedStringCallback(&inline_keyboard, keyboard_string_changed_callback);
+	swkbdInlineSetMovedCursorCallback(&inline_keyboard, keyboard_moved_cursor_callback);
+	swkbdInlineSetDecidedEnterCallback(&inline_keyboard, keyboard_decided_enter_callback);
+	swkbdInlineSetDecidedCancelCallback(&inline_keyboard, keyboard_decided_cancel_callback);
 
 	int last_touch_count = 0;
 	// maximum of 16 touches
@@ -420,7 +401,7 @@ void OS_Switch::run() {
 	hidInitializeTouchScreen();
 
 	while (appletMainLoop()) {
-		if (NintendoSwitch::get_singleton()->is_virtual_keyboard_open()) {
+		if (g_swkbd_open) {
 			for (int i = 0; i < last_touch_count; i++) {
 				Ref<InputEventScreenTouch> st;
 				st.instance();
@@ -473,17 +454,18 @@ void OS_Switch::run() {
 
 				last_touch_count = touch_state.count;
 			}
-
-			joypad->process();
-			input->flush_buffered_events();
 		}
 
-		NintendoSwitch::get_singleton()->update();
+		joypad->process();
+		input->flush_buffered_events();
+
+		swkbdInlineUpdate(&inline_keyboard, NULL);
 
 		if (Main::iteration())
 			break;
 	}
 
+	swkbdInlineClose(&inline_keyboard);
 	main_loop->finish();
 }
 
@@ -496,54 +478,44 @@ bool OS_Switch::has_virtual_keyboard() const {
 }
 
 int OS_Switch::get_virtual_keyboard_height() const {
-	if (!NintendoSwitch::get_singleton()->is_virtual_keyboard_open()) {
+	// todo: actually figure this out
+	if (!g_swkbd_open) {
 		return 0;
 	}
-	return 400;
+	return 300;
 }
 
-void OS_Switch::show_virtual_keyboard(const String &p_existing_text, const Rect2 &p_screen_rect, bool p_multiline, int p_max_input_length, int p_cursor_start, int p_cursor_end) {
-	NintendoSwitch::get_singleton()->show_virtual_keyboard(p_existing_text, NintendoSwitch::NORMAL_KEYBOARD);
+void OS_Switch::show_virtual_keyboard(const String &p_existing_text, const Rect2 &p_screen_rect, int p_max_input_length) {
+	if (!g_swkbd_open) {
+		g_swkbd_open = true;
+
+		SwkbdAppearArg appear_arg;
+		swkbdInlineMakeAppearArg(&appear_arg, SwkbdType_Normal);
+		swkbdInlineSetInputText(&inline_keyboard, p_existing_text.utf8().get_data());
+		swkbdInlineSetCursorPos(&inline_keyboard, p_existing_text.size() - 1);
+
+		g_eat_string_events = 2;
+
+		swkbdInlineAppear(&inline_keyboard, &appear_arg);
+	}
 }
 
 void OS_Switch::hide_virtual_keyboard() {
-	NintendoSwitch::get_singleton()->hide_virtual_keyboard();
+	printf("Hiding kbd!\n");
+	g_swkbd_open = false;
+	swkbdInlineDisappear(&inline_keyboard);
 }
 
 OS::PowerState OS_Switch::get_power_state() {
-	if (!OS_Switch::psm_initialized) {
-		return OS::POWERSTATE_UNKNOWN;
-	}
-
-	bool enough_power;
-	psmIsEnoughPowerSupplied(&enough_power);
-
-	if (!enough_power) {
-		return OS::PowerState::POWERSTATE_ON_BATTERY;
-	}
-
-	int percentage = OS_Switch::get_power_percent_left();
-
-	if (percentage == 100) {
-		return OS::PowerState::POWERSTATE_CHARGED;
-	}
-
-	return OS::PowerState::POWERSTATE_CHARGING;
+	return power_manager->get_power_state();
 }
 
 int OS_Switch::get_power_seconds_left() {
-	WARN_PRINT("power_seconds_left is not implemented on this platform, defaulting to -1");
-	return -1;
+	return power_manager->get_power_seconds_left();
 }
 
 int OS_Switch::get_power_percent_left() {
-	if (!OS_Switch::psm_initialized) {
-		return -1;
-	}
-
-	u32 voltage_percentage;
-	psmGetBatteryChargePercentage(&voltage_percentage);
-	return (int)voltage_percentage;
+	return power_manager->get_power_percent_left();
 }
 
 String OS_Switch::get_executable_path() const {
@@ -584,7 +556,9 @@ OS_Switch::OS_Switch() {
 	main_loop = nullptr;
 	visual_server = nullptr;
 	input = nullptr;
+	power_manager = nullptr;
 	gl_context = nullptr;
+	AudioDriverManager::add_driver(&driver_switch);
 
-	AudioDriverManager::add_driver(&driver_audren);
+	swkbdInlineCreate(&inline_keyboard);
 }

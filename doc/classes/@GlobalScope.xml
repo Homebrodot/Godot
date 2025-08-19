@@ -62,10 +62,6 @@
 		<member name="NavigationServer" type="NavigationServer" setter="" getter="">
 			The [NavigationServer] singleton.
 		</member>
-		<member name="NintendoSwitch" type="NintendoSwitch" setter="" getter="">
-			The [NintendoSwitch] singleton.
-			[b]Note:[/b] Only implemented on Nintendo Switch.
-		</member>
 		<member name="OS" type="OS" setter="" getter="">
 			The [OS] singleton.
 		</member>
