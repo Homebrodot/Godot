@@ -152,6 +152,14 @@ Error OS_Switch::initialize(const VideoMode &p_desired, int p_video_driver, int 
 
 	video_driver_index = p_video_driver;
 
+	// The surface we actually got, which is 1080p when docked. Everything
+	// downstream reads this through get_window_size(); SceneTree compares it
+	// against the previous frame's value every iteration and rebuilds the root
+	// viewport when it changes, so this is all the plumbing a resize needs.
+	current_videomode.width = gl_context->get_window_width();
+	current_videomode.height = gl_context->get_window_height();
+	last_operation_mode = appletGetOperationMode();
+
 	gl_context->set_use_vsync(current_videomode.use_vsync);
 #endif
 
@@ -234,11 +242,32 @@ int OS_Switch::get_mouse_button_state() const {
 void OS_Switch::set_window_title(const String &p_title) {}
 
 void OS_Switch::set_video_mode(const OS::VideoMode &p_video_mode, int p_screen) {}
-OS::VideoMode OS_Switch::get_video_mode(int p_screen) const {
-	return VideoMode(1280, 720);
+
+// Docking and undocking swap the display, and libnx offers no callback for it,
+// so the operation mode is polled once per frame. Cheap: it is a cached value
+// in the applet service, not an IPC round trip.
+void OS_Switch::_check_operation_mode() {
+	AppletOperationMode mode = appletGetOperationMode();
+	if (mode == last_operation_mode) {
+		return;
+	}
+	last_operation_mode = mode;
+
+	if (!gl_context || gl_context->refresh_size() != OK) {
+		return;
+	}
+
+	current_videomode.width = gl_context->get_window_width();
+	current_videomode.height = gl_context->get_window_height();
 }
 
-void OS_Switch::get_fullscreen_mode_list(List<OS::VideoMode> *p_list, int p_screen) const {}
+OS::VideoMode OS_Switch::get_video_mode(int p_screen) const {
+	return current_videomode;
+}
+
+void OS_Switch::get_fullscreen_mode_list(List<OS::VideoMode> *p_list, int p_screen) const {
+	p_list->push_back(current_videomode);
+}
 
 OS::RenderThreadMode OS_Switch::get_render_thread_mode() const {
 	if (OS::get_render_thread_mode() == OS::RenderThreadMode::RENDER_SEPARATE_THREAD) {
@@ -251,7 +280,11 @@ int OS_Switch::get_current_video_driver() const {
 	return video_driver_index;
 }
 Size2 OS_Switch::get_window_size() const {
-	return Size2(1280, 720);
+	return Size2(current_videomode.width, current_videomode.height);
+}
+
+Size2 OS_Switch::get_screen_size(int p_screen) const {
+	return get_window_size();
 }
 
 Error OS_Switch::execute(const String &p_path, const List<String> &p_arguments, bool p_blocking, ProcessID *r_child_id, String *r_pipe, int *r_exitcode, bool read_stderr, Mutex *p_pipe_mutex, bool p_open_console) {
@@ -480,6 +513,8 @@ void OS_Switch::run() {
 
 		NintendoSwitch::get_singleton()->update();
 
+		_check_operation_mode();
+
 		if (Main::iteration())
 			break;
 	}
@@ -581,6 +616,10 @@ OS_Switch *OS_Switch::get_singleton() {
 
 OS_Switch::OS_Switch() {
 	video_driver_index = 0;
+	// Handheld until initialize() asks the compositor what we are attached to.
+	current_videomode.width = 1280;
+	current_videomode.height = 720;
+	last_operation_mode = AppletOperationMode_Handheld;
 	main_loop = nullptr;
 	visual_server = nullptr;
 	input = nullptr;

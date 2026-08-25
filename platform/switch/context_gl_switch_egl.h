@@ -39,6 +39,12 @@ class ContextGLSwitchEGL {
 	EGLDisplay display;
 	EGLContext context;
 	EGLSurface surface;
+	EGLConfig config;
+
+	int width;
+	int height;
+
+	Error create_surface(int p_width, int p_height);
 
 public:
 	virtual void release_current();
@@ -47,6 +53,11 @@ public:
 	virtual int get_window_width();
 	virtual int get_window_height();
 	virtual void swap_buffers();
+
+	// Resize the window surface to match the display the console is currently
+	// attached to, for docking/undocking. No-op if it already matches.
+	// Returns OK and leaves the context current on success.
+	Error refresh_size();
 
 	void set_use_vsync(bool use) { vsync = use; }
 	bool is_using_vsync() const { return vsync; }
