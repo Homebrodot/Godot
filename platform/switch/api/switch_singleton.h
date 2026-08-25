@@ -54,6 +54,13 @@ public:
 		ALL_LANGUAGES_KEYBOARD = 8,
 	};
 
+	enum TemperatureLocation {
+		// TMP451 internal / external, as libnx names them. "External" is the
+		// sensor on the SoC, which is the one that moves under load.
+		TEMPERATURE_PCB = 0,
+		TEMPERATURE_SOC = 1,
+	};
+
 	int g_eat_string_events = 0;
 #ifdef HORIZON_ENABLED
 	SwkbdInline inline_keyboard;
@@ -73,12 +80,21 @@ public:
 	void hide_virtual_keyboard();
 	bool is_virtual_keyboard_open();
 
+	// Celsius, or -1.0 if the sensor is unavailable. See api.cpp for why there
+	// are two code paths.
+	float get_temperature(TemperatureLocation p_location);
+	float get_soc_temperature();
+	float get_pcb_temperature();
+
+	void initialize_thermal_sensors();
+
 	void cleanup();
 
 	NintendoSwitch();
 };
 
 VARIANT_ENUM_CAST(NintendoSwitch::SoftwareKeyboardType);
+VARIANT_ENUM_CAST(NintendoSwitch::TemperatureLocation);
 
 #endif // MODULE_MONO_ENABLED
 
