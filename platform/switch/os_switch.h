@@ -36,6 +36,7 @@
 #include "joypad_switch.h"
 #include "main/input_default.h"
 #include "servers/visual/visual_server_raster.h"
+#include "switch_wrapper.h" // AppletOperationMode
 
 #include <time.h>
 
@@ -53,6 +54,10 @@ class OS_Switch : public OS {
 	SwkbdInline inline_keyboard;
 
 	bool psm_initialized = false;
+
+	// Dock state. libnx has no notification for docking, so this is polled.
+	AppletOperationMode last_operation_mode;
+	void _check_operation_mode();
 
 protected:
 	virtual void initialize_core();
@@ -80,6 +85,7 @@ public:
 
 	virtual int get_current_video_driver() const;
 	virtual Size2 get_window_size() const;
+	virtual Size2 get_screen_size(int p_screen = -1) const;
 
 	virtual Error execute(const String &p_path, const List<String> &p_arguments, bool p_blocking, ProcessID *r_child_id = NULL, String *r_pipe = NULL, int *r_exitcode = NULL, bool read_stderr = false, Mutex *p_pipe_mutex = NULL, bool p_open_console = false);
 	virtual Error kill(const ProcessID &p_pid);

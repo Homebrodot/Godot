@@ -40,8 +40,79 @@
 #define TRACE(fmt, ...) printf("%s: " fmt "\n", __PRETTY_FUNCTION__, ##__VA_ARGS__)
 #endif
 
+// The size of the display the console is currently attached to. libnx reports
+// the dock state through appletGetOperationMode; there is no notification for
+// it, so callers poll.
+static int _mode_width() {
+	return appletGetOperationMode() == AppletOperationMode_Console ? 1920 : 1280;
+}
+
+static int _mode_height() {
+	return appletGetOperationMode() == AppletOperationMode_Console ? 1080 : 720;
+}
+
 ContextGLSwitchEGL::ContextGLSwitchEGL(bool gles3_context) {
 	this->gles3_context = gles3_context;
+	this->width = 1280;
+	this->height = 720;
+	this->surface = NULL;
+}
+
+// Sizes the native window, creates the EGL surface on it, and records the size
+// EGL actually gave us -- which is the number the rest of the engine should
+// see, rather than the one we asked for.
+Error ContextGLSwitchEGL::create_surface(int p_width, int p_height) {
+	NWindow *win = nwindowGetDefault();
+	if (R_FAILED(nwindowSetDimensions(win, p_width, p_height))) {
+		TRACE("nwindowSetDimensions(%d, %d) failed", p_width, p_height);
+		// Not fatal: the window keeps its previous size and we carry on with
+		// whatever EGL reports below.
+	}
+
+	surface = eglCreateWindowSurface(display, config, win, NULL);
+	if (!surface) {
+		TRACE("Surface creation failed! error: %d", eglGetError());
+		return ERR_CANT_CREATE;
+	}
+
+	EGLint w = 0, h = 0;
+	eglQuerySurface(display, surface, EGL_WIDTH, &w);
+	eglQuerySurface(display, surface, EGL_HEIGHT, &h);
+	width = w > 0 ? w : p_width;
+	height = h > 0 ? h : p_height;
+	return OK;
+}
+
+// Docking and undocking change the display under a live context. The context
+// itself survives; only the window surface has to be rebuilt.
+Error ContextGLSwitchEGL::refresh_size() {
+	if (!display || !context) {
+		return ERR_UNCONFIGURED;
+	}
+
+	const int p_width = _mode_width();
+	const int p_height = _mode_height();
+	if (p_width == width && p_height == height) {
+		return OK;
+	}
+
+	eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	if (surface) {
+		eglDestroySurface(display, surface);
+		surface = NULL;
+	}
+
+	Error err = create_surface(p_width, p_height);
+	if (err != OK) {
+		// Try to get back to something drawable rather than leaving the engine
+		// with no surface at all.
+		if (create_surface(width, height) != OK) {
+			return err;
+		}
+	}
+
+	eglMakeCurrent(display, surface, surface, context);
+	return OK;
 }
 
 ContextGLSwitchEGL::~ContextGLSwitchEGL() {
@@ -60,7 +131,6 @@ Error ContextGLSwitchEGL::initialize() {
 	eglInitialize(display, NULL, NULL);
 
 	// Get an appropriate EGL framebuffer configuration
-	EGLConfig config;
 	EGLint numConfigs;
 	static const EGLint attributeList[] = {
 		EGL_RED_SIZE, 8,
@@ -77,10 +147,11 @@ Error ContextGLSwitchEGL::initialize() {
 		goto _fail1;
 	}
 
-	// Create an EGL window surface
-	surface = eglCreateWindowSurface(display, config, nwindowGetDefault(), NULL);
-	if (!surface) {
-		TRACE("Surface creation failed! error: %d", eglGetError());
+	// Ask the compositor for a surface the size of the display we are actually
+	// attached to. Docked, that is 1080p; handheld, the panel's 720p. Without
+	// nwindowSetDimensions the window defaults to 1280x720 and the console
+	// upscales it to the TV, which is what this port used to do unconditionally.
+	if (create_surface(_mode_width(), _mode_height()) != OK) {
 		goto _fail1;
 	}
 
@@ -140,11 +211,11 @@ void ContextGLSwitchEGL::make_current() {
 }
 
 int ContextGLSwitchEGL::get_window_width() {
-	return 1280;
+	return width;
 }
 
 int ContextGLSwitchEGL::get_window_height() {
-	return 720; // todo: stub
+	return height;
 }
 
 void ContextGLSwitchEGL::swap_buffers() {
