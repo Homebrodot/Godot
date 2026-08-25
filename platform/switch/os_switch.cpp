@@ -411,6 +411,7 @@ void OS_Switch::run() {
 	main_loop->init();
 
 	NintendoSwitch::get_singleton()->initialize_software_keyboard();
+	NintendoSwitch::get_singleton()->initialize_thermal_sensors();
 
 	int last_touch_count = 0;
 	// maximum of 16 touches

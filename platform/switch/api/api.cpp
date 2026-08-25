@@ -84,6 +84,13 @@ void NintendoSwitch::_bind_methods() {
 	BIND_ENUM_CONSTANT(TRADITIONAL_CHINESE_KEYBOARD)
 	BIND_ENUM_CONSTANT(KOREAN_KEYBOARD)
 	BIND_ENUM_CONSTANT(ALL_LANGUAGES_KEYBOARD)
+
+	ClassDB::bind_method(D_METHOD("get_temperature", "location"), &NintendoSwitch::get_temperature);
+	ClassDB::bind_method(D_METHOD("get_soc_temperature"), &NintendoSwitch::get_soc_temperature);
+	ClassDB::bind_method(D_METHOD("get_pcb_temperature"), &NintendoSwitch::get_pcb_temperature);
+
+	BIND_ENUM_CONSTANT(TEMPERATURE_PCB)
+	BIND_ENUM_CONSTANT(TEMPERATURE_SOC)
 }
 
 #ifdef HORIZON_ENABLED
@@ -174,8 +181,90 @@ bool NintendoSwitch::is_virtual_keyboard_open() {
 	return g_swkbd_open;
 }
 
+#ifdef HORIZON_ENABLED
+static bool g_ts_initialized = false;
+// [10.0.0+] gives a per-sensor session returning a float in Celsius. Older
+// firmware only has the whole-integer tsGetTemperature(). Both are opened here
+// and the session is preferred, because tsGetTemperatureMilliC -- the obvious
+// choice for precision -- is documented [1.0.0-13.2.1] and is simply absent on
+// current firmware.
+static bool g_ts_sessions_open = false;
+static TsSession g_ts_session[2];
+#endif // HORIZON_ENABLED
+
+void NintendoSwitch::initialize_thermal_sensors() {
+#ifdef HORIZON_ENABLED
+	if (g_ts_initialized) {
+		return;
+	}
+	if (R_FAILED(tsInitialize())) {
+		return;
+	}
+	g_ts_initialized = true;
+
+	if (hosversionAtLeast(10, 0, 0)) {
+		const u32 device_code[2] = { TsDeviceCode_LocationInternal, TsDeviceCode_LocationExternal };
+		bool ok = true;
+		for (int i = 0; i < 2; i++) {
+			if (R_FAILED(tsOpenSession(&g_ts_session[i], device_code[i]))) {
+				ok = false;
+				// close whatever we already opened rather than leaking sessions
+				for (int j = 0; j < i; j++) {
+					tsSessionClose(&g_ts_session[j]);
+				}
+				break;
+			}
+		}
+		g_ts_sessions_open = ok;
+	}
+#endif // HORIZON_ENABLED
+}
+
+float NintendoSwitch::get_temperature(TemperatureLocation p_location) {
+#ifdef HORIZON_ENABLED
+	if (!g_ts_initialized) {
+		return -1.0f;
+	}
+	const int idx = (p_location == TEMPERATURE_SOC) ? 1 : 0;
+
+	if (g_ts_sessions_open) {
+		float value = 0.0f;
+		if (R_SUCCEEDED(tsSessionGetTemperature(&g_ts_session[idx], &value))) {
+			return value;
+		}
+	}
+
+	s32 whole = 0;
+	const TsLocation location = (p_location == TEMPERATURE_SOC) ? TsLocation_External : TsLocation_Internal;
+	if (R_SUCCEEDED(tsGetTemperature(location, &whole))) {
+		return (float)whole;
+	}
+	return -1.0f;
+#else
+	return -1.0f;
+#endif // HORIZON_ENABLED
+}
+
+float NintendoSwitch::get_soc_temperature() {
+	return get_temperature(TEMPERATURE_SOC);
+}
+
+float NintendoSwitch::get_pcb_temperature() {
+	return get_temperature(TEMPERATURE_PCB);
+}
+
 void NintendoSwitch::cleanup() {
 #ifdef HORIZON_ENABLED
 	swkbdInlineClose(&inline_keyboard);
+	if (g_ts_sessions_open) {
+		for (int i = 0; i < 2; i++) {
+			tsSessionClose(&g_ts_session[i]);
+		}
+		g_ts_sessions_open = false;
+	}
+	if (g_ts_initialized) {
+		tsExit();
+		g_ts_initialized = false;
+	}
 #endif // HORIZON_ENABLED
 }
